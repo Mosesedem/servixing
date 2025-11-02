@@ -1,65 +1,99 @@
-import Image from "next/image";
+import Link from "next/link"
+import Image from "next/image"
+import { Button } from "@/components/ui/button"
+import { Navbar } from "@/components/navbar"
+import { Wrench, Smartphone, Clock, Shield } from "lucide-react"
 
-export default function Home() {
+export default function LandingPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+    <>
+      <Navbar />
+      <main className="min-h-screen bg-gradient-to-b from-background to-slate-50">
+        {/* Hero Section */}
+        <section className="max-w-7xl mx-auto px-4 py-20">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <h1 className="text-5xl font-bold text-balance mb-4">
+                We <span className="text-orange-600">fix it right!</span>
+              </h1>
+              <p className="text-xl text-muted-foreground mb-8 text-balance">
+                Professional device repair management system. Track your repairs from drop-off to pickup with ease.
+              </p>
+              <div className="flex gap-4">
+                <Link href="/auth/signup">
+                  <Button size="lg" className="bg-orange-600 hover:bg-orange-700">
+                    Start Now
+                  </Button>
+                </Link>
+                <Link href="#features">
+                  <Button size="lg" variant="outline">
+                    Learn More
+                  </Button>
+                </Link>
+              </div>
+            </div>
+            <div className="flex justify-center">
+              <Image
+                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Facebook%20banner-dhAJhucOP8QhIpfiRo5IXatQ0R6Mwr.png"
+                alt="Repair Service"
+                width={500}
+                height={400}
+                className="rounded-lg shadow-xl"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Features Section */}
+        <section id="features" className="max-w-7xl mx-auto px-4 py-20">
+          <h2 className="text-3xl font-bold mb-12 text-center">Why Choose Servixing?</h2>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              {
+                icon: Smartphone,
+                title: "Easy Registration",
+                description: "Register your devices in seconds",
+              },
+              {
+                icon: Wrench,
+                title: "Expert Repairs",
+                description: "Professional technicians on duty",
+              },
+              {
+                icon: Clock,
+                title: "Real-time Updates",
+                description: "Track your repair status live",
+              },
+              {
+                icon: Shield,
+                title: "Warranty Protection",
+                description: "All repairs covered by warranty",
+              },
+            ].map((feature) => (
+              <div key={feature.title} className="bg-card border border-border rounded-lg p-6 text-center">
+                <feature.icon className="h-12 w-12 mx-auto mb-4 text-orange-600" />
+                <h3 className="font-semibold mb-2">{feature.title}</h3>
+                <p className="text-sm text-muted-foreground">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="bg-orange-600 text-white py-16">
+          <div className="max-w-3xl mx-auto text-center px-4">
+            <h2 className="text-3xl font-bold mb-4">Ready to get started?</h2>
+            <p className="text-lg mb-8 opacity-90">
+              Join thousands of customers who trust Servixing for their device repairs.
+            </p>
+            <Link href="/auth/signup">
+              <Button size="lg" className="bg-white text-orange-600 hover:bg-slate-100">
+                Create Your Account
+              </Button>
+            </Link>
+          </div>
+        </section>
       </main>
-    </div>
-  );
+    </>
+  )
 }
