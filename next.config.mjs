@@ -33,15 +33,15 @@ const nextConfig = {
       },
     ];
   },
-  redirects: async () => {
-    return [
-      {
-        source: "/dashboard",
-        destination: "/dashboard",
-        permanent: false,
-      },
-    ];
-  },
+  // redirects: async () => {
+  //   return [
+  //     {
+  //       source: "/",
+  //       destination: "/dashboard",
+  //       permanent: false,
+  //     },
+  //   ];
+  // },
 };
 
 export default nextConfig;

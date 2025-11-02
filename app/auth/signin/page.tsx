@@ -1,44 +1,66 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { signIn } from "next-auth/react"
-import { useState } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card } from "@/components/ui/card"
+import { signIn } from "next-auth/react";
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
 
 export default function SignInPage() {
-  const router = useRouter()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    setLoading(true)
+    e.preventDefault();
+    console.log("=== SIGNIN FORM SUBMIT ===");
+    console.log("Email:", email);
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    })
+    setError("");
+    setLoading(true);
 
-    if (result?.error) {
-      setError("Invalid email or password")
-    } else if (result?.ok) {
-      router.push("/dashboard")
+    try {
+      console.log("Calling signIn with credentials...");
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+
+      console.log("SignIn result:", {
+        ok: result?.ok,
+        error: result?.error,
+        status: result?.status,
+        url: result?.url,
+      });
+
+      if (result?.error) {
+        console.error("SignIn error:", result.error);
+        setError("Invalid email or password");
+      } else if (result?.ok) {
+        console.log("SignIn successful - redirecting to /dashboard");
+        router.push("/dashboard");
+      }
+    } catch (error) {
+      console.error("=== SIGNIN EXCEPTION ===");
+      console.error("Error:", error);
+      setError("An error occurred during sign in");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false)
-  }
+  };
 
   const handleGoogleSignIn = () => {
-    signIn("google", { callbackUrl: "/dashboard" })
-  }
+    console.log("=== GOOGLE SIGNIN ===");
+    console.log("Initiating Google sign in with callback: /dashboard");
+    signIn("google", { callbackUrl: "/dashboard" });
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
@@ -48,7 +70,11 @@ export default function SignInPage() {
           <p className="text-muted-foreground">Welcome to Servixing</p>
         </div>
 
-        {error && <div className="bg-red-50 text-red-700 p-3 rounded-lg mb-4 text-sm">{error}</div>}
+        {error && (
+          <div className="bg-red-50 text-red-700 p-3 rounded-lg mb-4 text-sm">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -73,7 +99,11 @@ export default function SignInPage() {
             />
           </div>
 
-          <Button type="submit" disabled={loading} className="w-full bg-orange-600 hover:bg-orange-700">
+          <Button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-orange-600 hover:bg-orange-700"
+          >
             {loading ? "Signing in..." : "Sign In"}
           </Button>
         </form>
@@ -87,7 +117,11 @@ export default function SignInPage() {
           </div>
         </div>
 
-        <Button onClick={handleGoogleSignIn} variant="outline" className="w-full bg-transparent">
+        <Button
+          onClick={handleGoogleSignIn}
+          variant="outline"
+          className="w-full bg-transparent"
+        >
           Sign in with Google
         </Button>
 
@@ -99,5 +133,5 @@ export default function SignInPage() {
         </p>
       </Card>
     </div>
-  )
+  );
 }

@@ -4,7 +4,28 @@ import { redirect } from "next/navigation";
 import { Navbar } from "@/components/navbar";
 
 export default async function DashboardPage() {
+  console.log("=== DASHBOARD PAGE LOAD START ===");
+  console.log("Timestamp:", new Date().toISOString());
+
+  console.log("Page: Fetching session...");
   const session = await getServerSession(authOptions);
+
+  console.log("Page: Session result:", {
+    hasSession: !!session,
+    user: session?.user
+      ? {
+          email: session.user.email,
+          name: session.user.name,
+        }
+      : null,
+  });
+
+  if (!session) {
+    console.log("Page: No session found - redirecting to /auth/signin");
+    redirect("/auth/signin");
+  }
+
+  console.log("Page: Session valid - rendering dashboard");
 
   return (
     <>
