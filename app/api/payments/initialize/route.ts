@@ -1,59 +1,42 @@
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth"
-import { prisma } from "@/lib/db"
-import { initializePayment } from "@/lib/paystack"
-import { type NextRequest, NextResponse } from "next/server"
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { asyncHandler } from "@/lib/middleware/error-handler";
+import { successResponse } from "@/lib/api-response";
+import { initializePaymentSchema } from "@/lib/schemas/payment";
+import { paymentService } from "@/lib/services/payment.service";
 
-export async function POST(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
+export const POST = asyncHandler(async (req: Request) => {
+  const session = await getServerSession(authOptions);
 
-    if (!session?.user?.id || !session.user.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const { workOrderId, amount } = await req.json()
-
-    if (!workOrderId || !amount) {
-      return NextResponse.json({ error: "Work order ID and amount required" }, { status: 400 })
-    }
-
-    // Verify work order belongs to user
-    const workOrder = await prisma.workOrder.findUnique({
-      where: { id: workOrderId },
-    })
-
-    if (!workOrder || workOrder.userId !== session.user.id) {
-      return NextResponse.json({ error: "Work order not found" }, { status: 404 })
-    }
-
-    if (workOrder.paymentStatus !== "pending") {
-      return NextResponse.json({ error: "Payment already in progress or completed" }, { status: 400 })
-    }
-
-    // Generate unique reference
-    const reference = `${workOrderId}-${Date.now()}`
-
-    // Initialize payment with Paystack
-    const paymentData = await initializePayment(session.user.email, amount, reference, workOrderId)
-
-    // Update work order with payment reference
-    await prisma.workOrder.update({
-      where: { id: workOrderId },
-      data: {
-        paymentReference: reference,
-        paymentStatus: "initiated",
-        paymentMethod: "paystack",
-      },
-    })
-
-    return NextResponse.json({
-      authorizationUrl: paymentData.data.authorization_url,
-      accessCode: paymentData.data.access_code,
-      reference,
-    })
-  } catch (error) {
-    console.error("[v0] Payment initialization error:", error)
-    return NextResponse.json({ error: "Failed to initialize payment" }, { status: 500 })
+  const userId = (session?.user as any)?.id as string | undefined;
+  if (!userId || !session?.user?.email) {
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: { code: "UNAUTHORIZED", message: "Unauthorized" },
+      }),
+      { status: 401, headers: { "content-type": "application/json" } }
+    );
   }
-}
+
+  const body = await req.json();
+  const data = initializePaymentSchema.parse({
+    ...body,
+    email: session.user.email,
+  });
+
+  const result = await paymentService.initializePayment({
+    workOrderId: data.workOrderId,
+    amount: data.amount,
+    email: data.email,
+    userId: userId,
+    metadata: data.metadata,
+  });
+
+  return successResponse({
+    authorizationUrl: result.authorizationUrl,
+    accessCode: result.accessCode,
+    reference: result.reference,
+    paymentId: result.paymentId,
+  });
+});

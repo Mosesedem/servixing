@@ -1,27 +1,30 @@
-import Link from "next/link"
-import Image from "next/image"
-import { Button } from "@/components/ui/button"
-import { Navbar } from "@/components/navbar"
-import { Wrench, Smartphone, Clock, Shield } from "lucide-react"
+import Link from "next/link";
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
+
+import { Wrench, Smartphone, Clock, Shield } from "lucide-react";
 
 export default function LandingPage() {
   return (
     <>
-      <Navbar />
-      <main className="min-h-screen bg-gradient-to-b from-background to-slate-50">
+      <main className="min-h-screen bg-background">
         {/* Hero Section */}
         <section className="max-w-7xl mx-auto px-4 py-20">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
               <h1 className="text-5xl font-bold text-balance mb-4">
-                We <span className="text-orange-600">fix it right!</span>
+                We <span className="text-primary">fix it right!</span>
               </h1>
               <p className="text-xl text-muted-foreground mb-8 text-balance">
-                Professional device repair management system. Track your repairs from drop-off to pickup with ease.
+                Professional device repair management system. Track your repairs
+                from drop-off to pickup with ease.
               </p>
               <div className="flex gap-4">
                 <Link href="/auth/signup">
-                  <Button size="lg" className="bg-orange-600 hover:bg-orange-700">
+                  <Button
+                    size="lg"
+                    className="bg-orange-600 hover:bg-orange-700"
+                  >
                     Start Now
                   </Button>
                 </Link>
@@ -46,7 +49,9 @@ export default function LandingPage() {
 
         {/* Features Section */}
         <section id="features" className="max-w-7xl mx-auto px-4 py-20">
-          <h2 className="text-3xl font-bold mb-12 text-center">Why Choose Servixing?</h2>
+          <h2 className="text-3xl font-bold mb-12 text-center">
+            Why Choose Servixing?
+          </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               {
@@ -70,10 +75,15 @@ export default function LandingPage() {
                 description: "All repairs covered by warranty",
               },
             ].map((feature) => (
-              <div key={feature.title} className="bg-card border border-border rounded-lg p-6 text-center">
+              <div
+                key={feature.title}
+                className="bg-card border border-border rounded-lg p-6 text-center"
+              >
                 <feature.icon className="h-12 w-12 mx-auto mb-4 text-orange-600" />
                 <h3 className="font-semibold mb-2">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground">{feature.description}</p>
+                <p className="text-sm text-muted-foreground">
+                  {feature.description}
+                </p>
               </div>
             ))}
           </div>
@@ -84,10 +94,14 @@ export default function LandingPage() {
           <div className="max-w-3xl mx-auto text-center px-4">
             <h2 className="text-3xl font-bold mb-4">Ready to get started?</h2>
             <p className="text-lg mb-8 opacity-90">
-              Join thousands of customers who trust Servixing for their device repairs.
+              Join thousands of customers who trust Servixing for their device
+              repairs.
             </p>
             <Link href="/auth/signup">
-              <Button size="lg" className="bg-white text-orange-600 hover:bg-slate-100">
+              <Button
+                size="lg"
+                className="bg-white text-orange-600 hover:bg-slate-100"
+              >
                 Create Your Account
               </Button>
             </Link>
@@ -95,5 +109,5 @@ export default function LandingPage() {
         </section>
       </main>
     </>
-  )
+  );
 }

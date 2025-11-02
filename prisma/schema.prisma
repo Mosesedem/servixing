@@ -7,6 +7,66 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Enums for type safety
+enum UserRole {
+  CUSTOMER
+  TECHNICIAN
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum WorkOrderStatus {
+  CREATED
+  ACCEPTED
+  IN_REPAIR
+  AWAITING_PARTS
+  READY_FOR_PICKUP
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum DropoffType {
+  DROPOFF
+  DISPATCH
+}
+
+enum WarrantyStatus {
+  NONE
+  PENDING
+  IN_WARRANTY
+  OUT_OF_WARRANTY
+  MANUAL_REQUIRED
+}
+
+enum PartStatus {
+  ORDERED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  PENDING
+  CLOSED
+}
+
+enum CheckStatus {
+  QUEUED
+  IN_PROGRESS
+  SUCCESS
+  FAILED
+  MANUAL_REQUIRED
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -16,17 +76,28 @@ model User {
   image         String?
   phone         String?
   address       String?
-  role          String    @default("customer")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  role          UserRole  @default(CUSTOMER)
 
+  // Soft delete
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
   accounts       Account[]
   sessions       Session[]
   devices        Device[]
   workOrders     WorkOrder[]
   supportTickets SupportTicket[]
-  TicketMessage  TicketMessage[]
+  ticketMessages TicketMessage[]
+  payments       Payment[]
+  notifications  NotificationLog[]
+  auditLogs      AuditLog[]
 
+  @@index([email])
+  @@index([role])
+  @@index([createdAt])
   @@map("users")
 }
 
@@ -70,8 +141,9 @@ model VerificationToken {
 }
 
 model Device {
-  id           String   @id @default(cuid())
-  userId       String
+  id     String @id @default(cuid())
+  userId String
+
   deviceType   String // laptop, phone, tablet, etc.
   brand        String // Apple, Dell, Samsung, etc.
   model        String
@@ -80,57 +152,109 @@ model Device {
   color        String?
   description  String?  @db.Text
   images       String[] // image URLs
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
 
+  // Soft delete
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   workOrders     WorkOrder[]
   supportTickets SupportTicket[]
 
+  @@index([userId])
+  @@index([serialNumber])
+  @@index([imei])
   @@map("devices")
 }
 
 model WorkOrder {
-  id                 String    @id @default(cuid())
-  userId             String
-  deviceId           String
-  status             String    @default("created")
-  issueDescription   String    @db.Text
-  estimatedCost      Float?
-  finalCost          Float?
-  notes              String?   @db.Text
-  paymentStatus      String    @default("pending")
-  paymentReference   String?   @unique
-  paymentMethod      String?
-  warrantyStatus     String? // active, expired, not_applicable
-  warrantyProvider   String? // apple, dell, samsung, custom, etc.
+  id       String @id @default(cuid())
+  userId   String
+  deviceId String
+
+  // Status and workflow
+  status           WorkOrderStatus @default(CREATED)
+  issueDescription String          @db.Text
+
+  // Service type
+  dropoffType     DropoffType
+  dispatchAddress Json? // { street, city, state, postalCode, country }
+
+  // Costs
+  dispatchFee   Decimal? @db.Decimal(10, 2)
+  estimatedCost Decimal? @db.Decimal(10, 2)
+  finalCost     Decimal? @db.Decimal(10, 2)
+  totalAmount   Decimal? @db.Decimal(10, 2)
+  costBreakdown Json? // { dispatchFee, serviceFee, warrantyFee, partsCost }
+
+  // Warranty
+  warrantyChecked    Boolean        @default(false)
+  warrantyStatus     WarrantyStatus @default(NONE)
+  warrantyProvider   String?
   warrantyExpiryDate DateTime?
-  partsPurchased     String[] // array of part IDs/SKUs from eBay
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  warrantyDecision   String? // "requested", "skipped", "requested_paid"
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  // Payment
+  paymentStatus    PaymentStatus @default(PENDING)
+  paymentMethod    String?
+  paymentReference String?       @unique
 
+  // Admin notes
+  notes    String? @db.Text
+  metadata Json? // Custom data storage
+
+  // Soft delete
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device         Device          @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  payments       Payment[]
+  parts          Part[]
+  warrantyChecks WarrantyCheck[]
+  supportTickets SupportTicket[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([createdAt])
+  @@index([userId, status])
   @@map("work_orders")
 }
 
 model SupportTicket {
-  id          String          @id @default(cuid())
+  id          String  @id @default(cuid())
   userId      String
+  deviceId    String?
   workOrderId String?
+
   title       String
-  description String          @db.Text
-  status      String          @default("open") // open, in_progress, resolved, closed
-  priority    String          @default("normal") // low, normal, high, urgent
+  description String       @db.Text
+  status      TicketStatus @default(OPEN)
+  priority    String       @default("normal") // low, normal, high, urgent
   assignedTo  String? // admin user ID
-  messages    TicketMessage[]
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
 
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  device Device? @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
+  // Soft delete
+  deletedAt DateTime?
 
+  messages  TicketMessage[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  // Relations
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device    Device?    @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  workOrder WorkOrder? @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
   @@map("support_tickets")
 }
 
@@ -145,6 +269,8 @@ model TicketMessage {
   ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([ticketId])
+  @@index([userId])
   @@map("ticket_messages")
 }
 
@@ -161,5 +287,172 @@ model KnowledgeBaseArticle {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([slug])
+  @@index([published])
   @@map("knowledge_base_articles")
+}
+
+// Payment Models
+model Payment {
+  id          String  @id @default(cuid())
+  userId      String
+  workOrderId String?
+
+  // Transaction details
+  amount   Decimal       @db.Decimal(10, 2)
+  currency String        @default("NGN")
+  status   PaymentStatus @default(PENDING)
+
+  // Paystack details
+  provider           String  @default("paystack")
+  paystackReference  String? @unique
+  paystackAuthCode   String?
+  paystackAccessCode String?
+
+  // Webhook
+  webhookVerified   Boolean   @default(false)
+  webhookVerifiedAt DateTime?
+
+  // Refund tracking
+  refundAmount Decimal?  @default(0) @db.Decimal(10, 2)
+  refundReason String?
+  refundedAt   DateTime?
+
+  // Metadata
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workOrder WorkOrder?   @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
+  logs      PaymentLog[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([paystackReference])
+  @@index([createdAt])
+  @@map("payments")
+}
+
+model PaymentLog {
+  id        String @id @default(cuid())
+  paymentId String
+
+  event    String // "initialized", "approved", "failed", "refunded"
+  response Json // Full Paystack response
+
+  createdAt DateTime @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+  @@map("payment_logs")
+}
+
+// Parts Models
+model Part {
+  id          String  @id @default(cuid())
+  workOrderId String?
+
+  // eBay details
+  ebayItemId String
+  title      String
+  partNumber String?
+  price      Decimal @db.Decimal(10, 2)
+  currency   String  @default("NGN")
+  quantity   Int     @default(1)
+  sellerInfo Json?
+
+  // Vendor tracking
+  vendorName String? // "ebay", "local_supplier"
+  invoiceUrl String?
+
+  // Status
+  orderStatus PartStatus @default(ORDERED)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  workOrder WorkOrder? @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
+
+  @@index([workOrderId])
+  @@index([orderStatus])
+  @@map("parts")
+}
+
+// Warranty Models
+model WarrantyCheck {
+  id          String @id @default(cuid())
+  workOrderId String
+
+  provider    String // "apple", "dell"
+  initiatedBy String // userId
+  status      CheckStatus @default(QUEUED)
+
+  result       Json? // API response data
+  errorMessage String?
+
+  createdAt  DateTime  @default(now())
+  finishedAt DateTime?
+
+  // Relations
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  @@index([workOrderId])
+  @@index([status])
+  @@map("warranty_checks")
+}
+
+// Notification Models
+model NotificationLog {
+  id     String @id @default(cuid())
+  userId String
+
+  type    String // "email", "sms", "in_app"
+  subject String?
+  content String  @db.Text
+  status  String  @default("pending") // "sent", "failed"
+
+  attempts  Int       @default(0)
+  lastError String?
+  sentAt    DateTime?
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("notification_logs")
+}
+
+// Audit Logging
+model AuditLog {
+  id     String  @id @default(cuid())
+  userId String?
+
+  action     String // "work_order_created", "payment_received", "device_deleted"
+  entityType String // "WorkOrder", "Payment", "Device"
+  entityId   String
+
+  oldValue Json?
+  newValue Json?
+
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([entityType])
+  @@index([createdAt])
+  @@map("audit_logs")
 }

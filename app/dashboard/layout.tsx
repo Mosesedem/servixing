@@ -1,20 +1,20 @@
-import type React from "react"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth"
-import { redirect } from "next/navigation"
-import Link from "next/link"
-import { Navbar } from "@/components/navbar"
-import { LayoutDashboard, Smartphone, FileText } from "lucide-react"
+import type React from "react";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import Link from "next/link";
+import { Navbar } from "@/components/navbar";
+import { LayoutDashboard, Smartphone, FileText } from "lucide-react";
 
 export default async function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  const session = await getServerSession(authOptions)
+  const session = await getServerSession(authOptions);
 
   if (!session) {
-    redirect("/auth/signin")
+    redirect("/auth/signin");
   }
 
   return (
@@ -40,7 +40,7 @@ export default async function DashboardLayout({
         <main className="flex-1 p-8">{children}</main>
       </div>
     </>
-  )
+  );
 }
 
 function SidebarLink({
@@ -48,9 +48,9 @@ function SidebarLink({
   icon: Icon,
   children,
 }: {
-  href: string
-  icon: React.ComponentType<any>
-  children: React.ReactNode
+  href: string;
+  icon: React.ComponentType<any>;
+  children: React.ReactNode;
 }) {
   return (
     <Link href={href}>
@@ -59,5 +59,5 @@ function SidebarLink({
         <span>{children}</span>
       </div>
     </Link>
-  )
+  );
 }

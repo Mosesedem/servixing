@@ -1,10 +1,4 @@
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   images: {
     remotePatterns: [
       {
@@ -37,7 +31,7 @@ const nextConfig = {
           },
         ],
       },
-    ]
+    ];
   },
   redirects: async () => {
     return [
@@ -46,8 +40,8 @@ const nextConfig = {
         destination: "/dashboard",
         permanent: false,
       },
-    ]
+    ];
   },
-}
+};
 
-export default nextConfig
+export default nextConfig;

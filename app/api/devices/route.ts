@@ -1,58 +1,57 @@
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth"
-import { prisma } from "@/lib/db"
-import { type NextRequest, NextResponse } from "next/server"
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { asyncHandler } from "@/lib/middleware/error-handler";
+import { successResponse } from "@/lib/api-response";
+import { createDeviceSchema, deviceQuerySchema } from "@/lib/schemas/device";
+import { deviceService } from "@/lib/services/device.service";
 
-export async function GET() {
-  try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const devices = await prisma.device.findMany({
-      where: { userId: session.user.id },
-      orderBy: { createdAt: "desc" },
-    })
-
-    return NextResponse.json(devices)
-  } catch (error) {
-    console.error("[v0] Error fetching devices:", error)
-    return NextResponse.json({ error: "Failed to fetch devices" }, { status: 500 })
+export const GET = asyncHandler(async (req: Request) => {
+  const session = await getServerSession(authOptions);
+  const userId = (session?.user as any)?.id as string | undefined;
+  if (!userId) {
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: { code: "UNAUTHORIZED", message: "Unauthorized" },
+      }),
+      { status: 401, headers: { "content-type": "application/json" } }
+    );
   }
-}
 
-export async function POST(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
+  const { searchParams } = new URL(req.url);
+  const filters = deviceQuerySchema.parse({
+    search: searchParams.get("search") ?? undefined,
+    deviceType: searchParams.get("deviceType") ?? undefined,
+    brand: searchParams.get("brand") ?? undefined,
+  });
 
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+  const result = await deviceService.getUserDevices(userId, {
+    ...filters,
+    page: Number(searchParams.get("page")) || 1,
+    limit: Number(searchParams.get("limit")) || 10,
+  });
 
-    const { deviceType, brand, model, serialNumber, color, description } = await req.json()
+  return successResponse(result.devices, {
+    pagination: result.pagination,
+  });
+});
 
-    if (!brand || !model) {
-      return NextResponse.json({ error: "Brand and model are required" }, { status: 400 })
-    }
-
-    const device = await prisma.device.create({
-      data: {
-        userId: session.user.id,
-        deviceType,
-        brand,
-        model,
-        serialNumber: serialNumber || null,
-        color: color || null,
-        description: description || null,
-        images: [],
-      },
-    })
-
-    return NextResponse.json(device, { status: 201 })
-  } catch (error) {
-    console.error("[v0] Error creating device:", error)
-    return NextResponse.json({ error: "Failed to create device" }, { status: 500 })
+export const POST = asyncHandler(async (req: Request) => {
+  const session = await getServerSession(authOptions);
+  const userId = (session?.user as any)?.id as string | undefined;
+  if (!userId) {
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: { code: "UNAUTHORIZED", message: "Unauthorized" },
+      }),
+      { status: 401, headers: { "content-type": "application/json" } }
+    );
   }
-}
+
+  const body = await req.json();
+  const data = createDeviceSchema.parse(body);
+
+  const device = await deviceService.createDevice(userId, data);
+  return successResponse({ device });
+});
