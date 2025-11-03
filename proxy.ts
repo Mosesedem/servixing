@@ -4,7 +4,7 @@ import { getToken } from "next-auth/jwt";
 
 const isDevelopment = process.env.NODE_ENV === "development";
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Public paths that don't require authentication
