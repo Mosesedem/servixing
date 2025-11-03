@@ -50,51 +50,67 @@ export function Navbar() {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-6">
-            <Link
-              href="/parts"
-              className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+          <div className="hidden md:flex items-center gap-2">
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className={`px-3 ${
                 isActive("/parts")
-                  ? "text-orange-600 font-semibold"
-                  : "text-muted-foreground hover:text-orange-600"
+                  ? "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
+                  : "text-muted-foreground"
               }`}
             >
-              <Search className="h-4 w-4" />
-              Find Parts
-            </Link>
-            <Link
-              href="/shop"
-              className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+              <Link href="/parts" className="flex items-center gap-2">
+                <Search className="h-4 w-4" />
+                <span>Find Parts</span>
+              </Link>
+            </Button>
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className={`px-3 ${
                 isActive("/shop")
-                  ? "text-orange-600 font-semibold"
-                  : "text-muted-foreground hover:text-orange-600"
+                  ? "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
+                  : "text-muted-foreground"
               }`}
             >
-              <ShoppingBag className="h-4 w-4" />
-              Shop
-            </Link>
-            <Link
-              href="/services"
-              className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+              <Link href="/shop" className="flex items-center gap-2">
+                <ShoppingBag className="h-4 w-4" />
+                <span>Shop</span>
+              </Link>
+            </Button>
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className={`px-3 ${
                 isActive("/services")
-                  ? "text-orange-600 font-semibold"
-                  : "text-muted-foreground hover:text-orange-600"
+                  ? "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
+                  : "text-muted-foreground"
               }`}
             >
-              <Wrench className="h-4 w-4" />
-              Services
-            </Link>
-            <Link
-              href="/help"
-              className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+              <Link href="/services" className="flex items-center gap-2">
+                <Wrench className="h-4 w-4" />
+                <span>Services</span>
+              </Link>
+            </Button>
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className={`px-3 ${
                 isActive("/help")
-                  ? "text-orange-600 font-semibold"
-                  : "text-muted-foreground hover:text-orange-600"
+                  ? "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
+                  : "text-muted-foreground"
               }`}
             >
-              <BookOpen className="h-4 w-4" />
-              Help
-            </Link>
+              <Link href="/help" className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                <span>Help</span>
+              </Link>
+            </Button>
           </div>
 
           {/* Desktop Auth */}
@@ -128,12 +144,7 @@ export function Navbar() {
                   </Button>
                 </Link>
                 <Link href="/auth/signup">
-                  <Button
-                    size="sm"
-                    className="bg-orange-600 hover:bg-orange-700"
-                  >
-                    Get Started
-                  </Button>
+                  <Button size="sm">Get Started</Button>
                 </Link>
               </>
             )}
@@ -156,77 +167,113 @@ export function Navbar() {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-border py-4">
             <div className="flex flex-col gap-3">
-              <Link
-                href="/parts"
-                className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className={`w-full justify-start ${
                   isActive("/parts")
-                    ? "bg-orange-50 dark:bg-orange-900/30 text-orange-600 font-semibold"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                    ? "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
+                    : "text-muted-foreground"
                 }`}
-                onClick={() => setMobileMenuOpen(false)}
               >
-                <Search className="h-4 w-4" />
-                Find Parts
-              </Link>
-              <Link
-                href="/shop"
-                className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                <Link href="/parts" onClick={() => setMobileMenuOpen(false)}>
+                  <span className="flex items-center gap-2">
+                    <Search className="h-4 w-4" />
+                    Find Parts
+                  </span>
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className={`w-full justify-start ${
                   isActive("/shop")
-                    ? "bg-orange-50 dark:bg-orange-900/30 text-orange-600 font-semibold"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                    ? "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
+                    : "text-muted-foreground"
                 }`}
-                onClick={() => setMobileMenuOpen(false)}
               >
-                <ShoppingBag className="h-4 w-4" />
-                Shop
-              </Link>
-              <Link
-                href="/services"
-                className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                <Link href="/shop" onClick={() => setMobileMenuOpen(false)}>
+                  <span className="flex items-center gap-2">
+                    <ShoppingBag className="h-4 w-4" />
+                    Shop
+                  </span>
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className={`w-full justify-start ${
                   isActive("/services")
-                    ? "bg-orange-50 dark:bg-orange-900/30 text-orange-600 font-semibold"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                    ? "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
+                    : "text-muted-foreground"
                 }`}
-                onClick={() => setMobileMenuOpen(false)}
               >
-                <Wrench className="h-4 w-4" />
-                Services
-              </Link>
-              <Link
-                href="/help"
-                className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                <Link href="/services" onClick={() => setMobileMenuOpen(false)}>
+                  <span className="flex items-center gap-2">
+                    <Wrench className="h-4 w-4" />
+                    Services
+                  </span>
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className={`w-full justify-start ${
                   isActive("/help")
-                    ? "bg-orange-50 dark:bg-orange-900/30 text-orange-600 font-semibold"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                    ? "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
+                    : "text-muted-foreground"
                 }`}
-                onClick={() => setMobileMenuOpen(false)}
               >
-                <BookOpen className="h-4 w-4" />
-                Help
-              </Link>
+                <Link href="/help" onClick={() => setMobileMenuOpen(false)}>
+                  <span className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4" />
+                    Help
+                  </span>
+                </Link>
+              </Button>
 
               <div className="border-t border-border my-2"></div>
 
               {session ? (
                 <>
-                  <Link
-                    href="/dashboard"
-                    className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                    onClick={() => setMobileMenuOpen(false)}
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start text-muted-foreground"
                   >
-                    <LayoutDashboard className="h-4 w-4" />
-                    Dashboard
-                  </Link>
-                  {((session.user as any).role === "ADMIN" ||
-                    (session.user as any).role === "SUPER_ADMIN") && (
                     <Link
-                      href="/admin"
-                      className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                      href="/dashboard"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <Settings className="h-4 w-4" />
-                      Admin
+                      <span className="flex items-center gap-2">
+                        <LayoutDashboard className="h-4 w-4" />
+                        Dashboard
+                      </span>
                     </Link>
+                  </Button>
+                  {((session.user as any).role === "ADMIN" ||
+                    (session.user as any).role === "SUPER_ADMIN") && (
+                    <Button
+                      asChild
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start text-muted-foreground"
+                    >
+                      <Link
+                        href="/admin"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <span className="flex items-center gap-2">
+                          <Settings className="h-4 w-4" />
+                          Admin
+                        </span>
+                      </Link>
+                    </Button>
                   )}
                   <button
                     onClick={() => {
@@ -256,10 +303,7 @@ export function Navbar() {
                     href="/auth/signup"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <Button
-                      size="sm"
-                      className="w-full bg-orange-600 hover:bg-orange-700"
-                    >
+                    <Button size="sm" className="w-full">
                       Get Started
                     </Button>
                   </Link>
