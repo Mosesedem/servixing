@@ -1,4 +1,5 @@
 import { hash, compare } from "bcryptjs";
+import { randomBytes, createHash } from "crypto";
 import { db } from "@/lib/db";
 import {
   ConflictError,
@@ -189,6 +190,108 @@ export class AuthService {
     }
 
     return allowedRoles.includes(user.role);
+  }
+
+  /**
+   * Generate a password reset token and return metadata for email delivery
+   */
+  async requestPasswordReset(email: string) {
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await db.user.findUnique({
+      where: { email: normalizedEmail },
+      select: { id: true, email: true, name: true, deletedAt: true },
+    });
+
+    if (!user || !user.email || user.deletedAt) {
+      logger.warn(
+        `Password reset requested for non-existent or inactive account: ${normalizedEmail}`
+      );
+      return null;
+    }
+
+    // Remove existing tokens for this identifier
+    await db.verificationToken.deleteMany({
+      where: { identifier: user.email },
+    });
+
+    const resetToken = randomBytes(32).toString("hex");
+    const hashedToken = createHash("sha256").update(resetToken).digest("hex");
+    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour expiry
+
+    await db.verificationToken.create({
+      data: {
+        identifier: user.email,
+        token: hashedToken,
+        expires,
+      },
+    });
+
+    logger.info(`Password reset token generated for user: ${user.email}`);
+
+    return {
+      token: resetToken,
+      expires,
+      email: user.email,
+      name: user.name,
+    };
+  }
+
+  /**
+   * Reset password using a valid token
+   */
+  async resetPassword(token: string, newPassword: string) {
+    const hashedToken = createHash("sha256").update(token).digest("hex");
+
+    const verificationRecord = await db.verificationToken.findFirst({
+      where: { token: hashedToken },
+    });
+
+    if (!verificationRecord) {
+      throw new ValidationError("Invalid or expired reset token");
+    }
+
+    if (verificationRecord.expires < new Date()) {
+      await db.verificationToken.delete({
+        where: {
+          identifier_token: {
+            identifier: verificationRecord.identifier,
+            token: verificationRecord.token,
+          },
+        },
+      });
+      throw new ValidationError("Reset token has expired");
+    }
+
+    const user = await db.user.findUnique({
+      where: { email: verificationRecord.identifier },
+    });
+
+    if (!user) {
+      throw new NotFoundError("User");
+    }
+
+    const passwordHash = await hash(newPassword, 12);
+
+    await db.user.update({
+      where: { id: user.id },
+      data: {
+        password: passwordHash,
+        emailVerified: user.emailVerified ?? new Date(),
+      },
+    });
+
+    await db.verificationToken.delete({
+      where: {
+        identifier_token: {
+          identifier: verificationRecord.identifier,
+          token: verificationRecord.token,
+        },
+      },
+    });
+
+    logger.info(`Password reset completed for user: ${user.email}`);
+
+    return { success: true, userId: user.id };
   }
 }
 
