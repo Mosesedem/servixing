@@ -6,7 +6,7 @@ import { updateWorkOrderSchema } from "@/lib/schemas/work-order";
 import { workOrderService } from "@/lib/services/work-order.service";
 
 export const GET = asyncHandler(
-  async (req: Request, { params }: { params: { id: string } }) => {
+  async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
     const session = await getServerSession(authOptions);
     const userId = (session?.user as any)?.id as string | undefined;
     const userRole = (session?.user as any)?.role as string | undefined;
@@ -21,7 +21,7 @@ export const GET = asyncHandler(
       );
     }
 
-    const workOrderId = params.id;
+    const { id: workOrderId } = await params;
     const isAdmin = userRole === "ADMIN" || userRole === "SUPER_ADMIN";
 
     const workOrder = await workOrderService.getWorkOrderById(
@@ -35,7 +35,7 @@ export const GET = asyncHandler(
 );
 
 export const PUT = asyncHandler(
-  async (req: Request, { params }: { params: { id: string } }) => {
+  async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
     const session = await getServerSession(authOptions);
     const userId = (session?.user as any)?.id as string | undefined;
     const userRole = (session?.user as any)?.role as string | undefined;
@@ -69,7 +69,7 @@ export const PUT = asyncHandler(
       );
     }
 
-    const workOrderId = params.id;
+    const { id: workOrderId } = await params;
     const body = await req.json();
     const data = updateWorkOrderSchema.parse(body);
 
@@ -83,7 +83,7 @@ export const PUT = asyncHandler(
 );
 
 export const DELETE = asyncHandler(
-  async (req: Request, { params }: { params: { id: string } }) => {
+  async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
     const session = await getServerSession(authOptions);
     const userId = (session?.user as any)?.id as string | undefined;
 
@@ -97,7 +97,7 @@ export const DELETE = asyncHandler(
       );
     }
 
-    const workOrderId = params.id;
+    const { id: workOrderId } = await params;
     const cancelledWorkOrder = await workOrderService.cancelWorkOrder(
       workOrderId,
       userId

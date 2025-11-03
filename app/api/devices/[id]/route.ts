@@ -10,7 +10,7 @@ import { deviceService } from "@/lib/services/device.service";
  * Get device details
  */
 export const GET = asyncHandler(
-  async (_req: Request, { params }: { params: { id: string } }) => {
+  async (_req: Request, { params }: { params: Promise<{ id: string }> }) => {
     const session = await getServerSession(authOptions);
     const userId = (session?.user as any)?.id as string | undefined;
 
@@ -24,7 +24,8 @@ export const GET = asyncHandler(
       );
     }
 
-    const device = await deviceService.getDeviceById(params.id, userId);
+    const { id } = await params;
+    const device = await deviceService.getDeviceById(id, userId);
     return successResponse({ device });
   }
 );
@@ -34,7 +35,7 @@ export const GET = asyncHandler(
  * Update device
  */
 export const PUT = asyncHandler(
-  async (req: Request, { params }: { params: { id: string } }) => {
+  async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
     const session = await getServerSession(authOptions);
     const userId = (session?.user as any)?.id as string | undefined;
 
@@ -51,7 +52,8 @@ export const PUT = asyncHandler(
     const body = await req.json();
     const data = updateDeviceSchema.parse(body);
 
-    const device = await deviceService.updateDevice(params.id, userId, data);
+    const { id } = await params;
+    const device = await deviceService.updateDevice(id, userId, data);
     return successResponse({ device });
   }
 );
@@ -61,7 +63,7 @@ export const PUT = asyncHandler(
  * Delete device (soft delete)
  */
 export const DELETE = asyncHandler(
-  async (_req: Request, { params }: { params: { id: string } }) => {
+  async (_req: Request, { params }: { params: Promise<{ id: string }> }) => {
     const session = await getServerSession(authOptions);
     const userId = (session?.user as any)?.id as string | undefined;
 
@@ -75,7 +77,8 @@ export const DELETE = asyncHandler(
       );
     }
 
-    const result = await deviceService.deleteDevice(params.id, userId);
+    const { id } = await params;
+    const result = await deviceService.deleteDevice(id, userId);
     return successResponse(result);
   }
 );

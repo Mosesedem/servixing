@@ -44,6 +44,10 @@ const envSchema = z.object({
   CLOUDINARY_API_KEY: z.string().optional(),
   CLOUDINARY_API_SECRET: z.string().optional(),
 
+  // Warranty and Device Status APIs
+  WARRANTY_API_KEY: z.string().optional(),
+  GSMA_API_KEY: z.string().optional(),
+
   // Apple Warranty API (optional)
   APPLE_API_KEY: z.string().optional(),
   APPLE_API_SECRET: z.string().optional(),

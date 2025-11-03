@@ -14,40 +14,42 @@ export class PaymentService {
    * Initialize Paystack payment
    */
   async initializePayment(data: {
-    workOrderId: string;
+    workOrderId?: string;
     userId: string;
     email: string;
     amount: number;
     metadata?: any;
   }) {
-    // Verify work order exists
-    const workOrder = await db.workOrder.findUnique({
-      where: { id: data.workOrderId },
-      select: {
-        id: true,
-        userId: true,
-        totalAmount: true,
-        paymentStatus: true,
-      },
-    });
+    // Verify work order exists if provided
+    if (data.workOrderId) {
+      const workOrder = await db.workOrder.findUnique({
+        where: { id: data.workOrderId },
+        select: {
+          id: true,
+          userId: true,
+          totalAmount: true,
+          paymentStatus: true,
+        },
+      });
 
-    if (!workOrder) {
-      throw new NotFoundError("Work order");
-    }
+      if (!workOrder) {
+        throw new NotFoundError("Work order");
+      }
 
-    if (workOrder.userId !== data.userId) {
-      throw new PaymentError("Unauthorized payment attempt");
-    }
+      if (workOrder.userId !== data.userId) {
+        throw new PaymentError("Unauthorized payment attempt");
+      }
 
-    if (workOrder.paymentStatus === "PAID") {
-      throw new PaymentError("Work order already paid");
+      if (workOrder.paymentStatus === "PAID") {
+        throw new PaymentError("Work order already paid");
+      }
     }
 
     // Create payment record
     const payment = await db.payment.create({
       data: {
         userId: data.userId,
-        workOrderId: data.workOrderId,
+        workOrderId: data.workOrderId || null,
         amount: new Decimal(data.amount),
         status: "PENDING",
         provider: "paystack",
@@ -74,7 +76,9 @@ export class PaymentService {
               workOrderId: data.workOrderId,
               ...data.metadata,
             },
-            callback_url: `${env.NEXTAUTH_URL}/dashboard/work-orders/${data.workOrderId}`,
+            callback_url: data.workOrderId
+              ? `${env.NEXTAUTH_URL}/dashboard/work-orders/${data.workOrderId}`
+              : `${env.NEXTAUTH_URL}/services/warranty-device-check?payment=${payment.id}`,
           }),
         }
       );
@@ -180,9 +184,9 @@ export class PaymentService {
       });
 
       // Update work order if payment successful
-      if (paymentData.status === "success") {
+      if (paymentData.status === "success" && payment.workOrderId) {
         await db.workOrder.update({
-          where: { id: payment.workOrderId! },
+          where: { id: payment.workOrderId },
           data: {
             paymentStatus: "PAID",
             paymentReference: reference,

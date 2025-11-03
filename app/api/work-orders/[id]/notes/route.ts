@@ -11,7 +11,7 @@ const updateNotesSchema = z.object({
 });
 
 export const PUT = asyncHandler(
-  async (req: Request, { params }: { params: { id: string } }) => {
+  async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
     const session = await getServerSession(authOptions);
     const userId = (session?.user as any)?.id as string | undefined;
     const userRole = (session?.user as any)?.role as string | undefined;
@@ -26,7 +26,7 @@ export const PUT = asyncHandler(
       );
     }
 
-    const workOrderId = params.id;
+    const { id: workOrderId } = await params;
 
     // Verify work order exists
     const workOrder = await db.workOrder.findUnique({

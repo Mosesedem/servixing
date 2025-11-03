@@ -4,7 +4,7 @@ import { z } from "zod";
  * Payment initialization schema
  */
 export const initializePaymentSchema = z.object({
-  workOrderId: z.string().cuid("Invalid work order ID"),
+  workOrderId: z.string().cuid("Invalid work order ID").optional(),
   amount: z.number().positive("Amount must be positive"),
   email: z.string().email("Invalid email address"),
   metadata: z.record(z.any()).optional(),

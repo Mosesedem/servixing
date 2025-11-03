@@ -14,7 +14,7 @@ const refundSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -29,7 +29,7 @@ export async function POST(
       return errorResponse("FORBIDDEN", "Admin privileges required", 403);
     }
 
-    const paymentId = params.id;
+    const { id: paymentId } = await params;
 
     // Ensure payment exists and is PAID
     const payment = await prisma.payment.findUnique({

@@ -7,7 +7,7 @@ import { UserRole } from "@prisma/client";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -18,7 +18,7 @@ export async function GET(
       return errorResponse("UNAUTHORIZED", "Authentication required", 401);
     }
 
-    const paymentId = params.id;
+    const { id: paymentId } = await params;
 
     const payment = await prisma.payment.findUnique({
       where: { id: paymentId },

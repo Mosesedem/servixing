@@ -6,8 +6,9 @@ import { Navbar } from "@/components/navbar";
 export function ConditionalNavbar() {
   const pathname = usePathname();
 
-  // Hide navbar on auth pages
-  const hideNavbar = pathname?.startsWith("/auth/");
+  // Hide navbar on dashboard and admin pages
+  const hideNavbar =
+    pathname?.startsWith("/dashboard") || pathname?.startsWith("/admin");
 
   if (hideNavbar) {
     return null;

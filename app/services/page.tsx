@@ -129,6 +129,19 @@ export default function ServicesPage() {
       ],
       price: "Quote-based",
     },
+    {
+      icon: Shield,
+      title: "Warranty & Device Status Check",
+      description:
+        "Real-time warranty status and device status check for Apple and Dell devices",
+      features: [
+        "Apple & Dell support",
+        "IMEI status check",
+        "Instant results",
+      ],
+      price: "₦100",
+      link: "/services/warranty-device-check",
+    },
   ];
 
   return (
@@ -249,9 +262,9 @@ export default function ServicesPage() {
                   </span>
                 </div>
 
-                <Link href="/dashboard/work-orders/create">
+                <Link href={service.link || "/dashboard/work-orders/create"}>
                   <Button className="w-full bg-orange-600 hover:bg-orange-700">
-                    Request Service
+                    {service.link ? "Check Device" : "Request Service"}
                   </Button>
                 </Link>
               </Card>
