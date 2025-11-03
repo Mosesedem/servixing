@@ -214,9 +214,13 @@ export class AuthService {
       where: { identifier: user.email },
     });
 
-    const resetToken = randomBytes(32).toString("hex");
-    const hashedToken = createHash("sha256").update(resetToken).digest("hex");
-    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour expiry
+    // Generate a 6-digit numeric PIN for better UX
+    // Note: Lower entropy than a random token, so we shorten expiry and recommend rate limiting
+    const pin = Math.floor(Math.random() * 1_000_000)
+      .toString()
+      .padStart(6, "0");
+    const hashedToken = createHash("sha256").update(pin).digest("hex");
+    const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
 
     await db.verificationToken.create({
       data: {
@@ -226,10 +230,10 @@ export class AuthService {
       },
     });
 
-    logger.info(`Password reset token generated for user: ${user.email}`);
+    logger.info(`Password reset PIN generated for user: ${user.email}`);
 
     return {
-      token: resetToken,
+      token: pin,
       expires,
       email: user.email,
       name: user.name,
@@ -292,6 +296,39 @@ export class AuthService {
     logger.info(`Password reset completed for user: ${user.email}`);
 
     return { success: true, userId: user.id };
+  }
+
+  /**
+   * Verify a password reset token/PIN without consuming it
+   */
+  async verifyResetToken(token: string) {
+    const hashedToken = createHash("sha256").update(token).digest("hex");
+
+    const verificationRecord = await db.verificationToken.findFirst({
+      where: { token: hashedToken },
+    });
+
+    if (!verificationRecord) {
+      throw new ValidationError("Invalid or expired reset token");
+    }
+
+    if (verificationRecord.expires < new Date()) {
+      await db.verificationToken.delete({
+        where: {
+          identifier_token: {
+            identifier: verificationRecord.identifier,
+            token: verificationRecord.token,
+          },
+        },
+      });
+      throw new ValidationError("Reset token has expired");
+    }
+
+    return {
+      identifier: verificationRecord.identifier,
+      expires: verificationRecord.expires,
+      valid: true,
+    };
   }
 }
 

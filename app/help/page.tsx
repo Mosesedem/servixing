@@ -15,6 +15,8 @@ import {
   Wrench,
   CreditCard,
   AlertCircle,
+  Lightbulb,
+  FileQuestionIcon,
 } from "lucide-react";
 
 export default function HelpCenterPage() {
@@ -113,9 +115,21 @@ export default function HelpCenterPage() {
       href: "/parts",
     },
     {
+      icon: Lightbulb,
+      title: "Knowledge Base",
+      desc: "Learn and bootstrap your own DIY",
+      href: "/knowledge-base",
+    },
+    {
       icon: MessageSquare,
       title: "Contact Support",
       desc: "Get help from our team",
+      href: "/support/create-ticket",
+    },
+    {
+      icon: FileQuestionIcon,
+      title: "FAQs",
+      desc: "Frequently asked questions and answers.",
       href: "/support/create-ticket",
     },
   ];
@@ -144,7 +158,7 @@ export default function HelpCenterPage() {
 
       {/* Quick Links */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 -mt-8">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {quickLinks.map((link) => (
             <Link key={link.title} href={link.href}>
               <Card className="p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer border-2 hover:border-orange-200 dark:hover:border-orange-800">

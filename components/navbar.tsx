@@ -32,7 +32,7 @@ export function Navbar() {
   };
 
   return (
-    <nav className="border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-50 shadow-sm">
+    <nav className="border-b border-border bg-background/95 backdrop-blur-2xl p-2.5 supports-backdrop-filter:bg-background/60 sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -54,7 +54,7 @@ export function Navbar() {
             <Button
               asChild
               variant="ghost"
-              size="sm"
+              size="lg"
               className={`px-3 ${
                 isActive("/parts")
                   ? "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
@@ -69,7 +69,7 @@ export function Navbar() {
             <Button
               asChild
               variant="ghost"
-              size="sm"
+              size="lg"
               className={`px-3 ${
                 isActive("/shop")
                   ? "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
@@ -84,7 +84,7 @@ export function Navbar() {
             <Button
               asChild
               variant="ghost"
-              size="sm"
+              size="lg"
               className={`px-3 ${
                 isActive("/services")
                   ? "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
@@ -99,7 +99,7 @@ export function Navbar() {
             <Button
               asChild
               variant="ghost"
-              size="sm"
+              size="lg"
               className={`px-3 ${
                 isActive("/help")
                   ? "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
@@ -118,7 +118,7 @@ export function Navbar() {
             {session ? (
               <>
                 <Link href="/dashboard">
-                  <Button variant="ghost" size="sm" className="gap-2">
+                  <Button variant="ghost" size="lg" className="gap-2">
                     <LayoutDashboard className="h-4 w-4" />
                     Dashboard
                   </Button>
@@ -126,25 +126,25 @@ export function Navbar() {
                 {((session.user as any).role === "ADMIN" ||
                   (session.user as any).role === "SUPER_ADMIN") && (
                   <Link href="/admin">
-                    <Button variant="ghost" size="sm" className="gap-2">
+                    <Button variant="ghost" size="lg" className="gap-2">
                       <Settings className="h-4 w-4" />
                       Admin
                     </Button>
                   </Link>
                 )}
-                <Button onClick={() => signOut()} variant="ghost" size="sm">
+                <Button onClick={() => signOut()} variant="ghost" size="lg">
                   Sign Out
                 </Button>
               </>
             ) : (
               <>
                 <Link href="/auth/signin">
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="lg">
                     Sign In
                   </Button>
                 </Link>
                 <Link href="/auth/signup">
-                  <Button size="sm">Get Started</Button>
+                  <Button size="lg">Get Started</Button>
                 </Link>
               </>
             )}
@@ -170,7 +170,7 @@ export function Navbar() {
               <Button
                 asChild
                 variant="ghost"
-                size="sm"
+                size="lg"
                 className={`w-full justify-start ${
                   isActive("/parts")
                     ? "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
@@ -187,7 +187,7 @@ export function Navbar() {
               <Button
                 asChild
                 variant="ghost"
-                size="sm"
+                size="lg"
                 className={`w-full justify-start ${
                   isActive("/shop")
                     ? "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
@@ -204,7 +204,7 @@ export function Navbar() {
               <Button
                 asChild
                 variant="ghost"
-                size="sm"
+                size="lg"
                 className={`w-full justify-start ${
                   isActive("/services")
                     ? "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
@@ -221,7 +221,7 @@ export function Navbar() {
               <Button
                 asChild
                 variant="ghost"
-                size="sm"
+                size="lg"
                 className={`w-full justify-start ${
                   isActive("/help")
                     ? "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
@@ -243,7 +243,7 @@ export function Navbar() {
                   <Button
                     asChild
                     variant="ghost"
-                    size="sm"
+                    size="lg"
                     className="w-full justify-start text-muted-foreground"
                   >
                     <Link
@@ -261,7 +261,7 @@ export function Navbar() {
                     <Button
                       asChild
                       variant="ghost"
-                      size="sm"
+                      size="lg"
                       className="w-full justify-start text-muted-foreground"
                     >
                       <Link
@@ -293,7 +293,7 @@ export function Navbar() {
                   >
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="lg"
                       className="w-full justify-start"
                     >
                       Sign In
@@ -303,7 +303,7 @@ export function Navbar() {
                     href="/auth/signup"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <Button size="sm" className="w-full">
+                    <Button size="lg" className="w-full">
                       Get Started
                     </Button>
                   </Link>

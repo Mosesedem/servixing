@@ -16,6 +16,7 @@ export default function ResetPasswordPage() {
 
   const [token, setToken] = useState(tokenFromUrl);
   const [isTokenLocked, setIsTokenLocked] = useState(Boolean(tokenFromUrl));
+  const [isVerified, setIsVerified] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -31,15 +32,75 @@ export default function ResetPasswordPage() {
     }
   }, [tokenFromUrl]);
 
+  // Auto-verify when a token is present in the URL
+  useEffect(() => {
+    const autoVerify = async () => {
+      if (!tokenFromUrl || isVerified) return;
+      try {
+        setIsSubmitting(true);
+        const response = await fetch("/api/auth/reset-password/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: tokenFromUrl }),
+        });
+        const result = await response.json();
+        if (response.ok) {
+          setIsVerified(true);
+          setStatusMessage("Code verified. You can now set a new password.");
+        } else {
+          setErrorMessage(result.error?.message || "Invalid or expired code");
+        }
+      } catch (e) {
+        // Silent fail, user can try manual verify
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+    autoVerify();
+  }, [tokenFromUrl, isVerified]);
+
+  const handleVerify = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setErrorMessage("");
+    setStatusMessage("");
+
+    if (!token || !/^\d{5,6}$/.test(token)) {
+      setErrorMessage("Please enter a valid 5 or 6 digit code");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("/api/auth/reset-password/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        setErrorMessage(result.error?.message || "Invalid or expired code");
+        return;
+      }
+
+      setIsVerified(true);
+      setIsTokenLocked(true);
+      setStatusMessage("Code verified. You can now set a new password.");
+    } catch (error) {
+      console.error("Verify reset code error", error);
+      setErrorMessage("Something went wrong. Please try again later.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setErrorMessage("");
     setStatusMessage("");
 
-    if (!token) {
-      setErrorMessage(
-        "Reset token not found. Please use the link from your email."
-      );
+    if (!isVerified) {
+      setErrorMessage("Please verify your reset code first.");
       return;
     }
 
@@ -106,7 +167,9 @@ export default function ResetPasswordPage() {
             Reset your password
           </h1>
           <p className="text-muted-foreground text-sm">
-            Choose a new password for your Servixing account.
+            {isVerified
+              ? "Choose a new password for your Servixing account."
+              : "Enter the 5–6 digit code from your email to continue."}
           </p>
         </div>
 
@@ -122,125 +185,149 @@ export default function ResetPasswordPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="token" className="block text-sm font-medium mb-2">
-              Reset token
-            </label>
-            <Input
-              id="token"
-              type="text"
-              value={token}
-              onChange={(event) => setToken(event.target.value)}
-              placeholder="Paste your reset token"
-              required
-              readOnly={isTokenLocked}
-              disabled={isSubmitting && isTokenLocked}
-              className="h-11"
-            />
-            {isTokenLocked ? (
-              <p className="mt-2 text-xs text-muted-foreground">
-                Token detected from your email link. You can request a new link
-                if this one expired.
-              </p>
-            ) : (
-              <p className="mt-2 text-xs text-muted-foreground">
-                Paste the reset token from the email you received.
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium mb-2"
-            >
-              New password
-            </label>
-            <div className="relative">
+        {!isVerified ? (
+          <form onSubmit={handleVerify} className="space-y-4">
+            <div>
+              <label htmlFor="token" className="block text-sm font-medium mb-2">
+                Reset code
+              </label>
               <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder="••••••••"
-                required
-                autoComplete="new-password"
-                className="h-11 pr-12"
-                disabled={isSubmitting}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute inset-y-0 right-3 flex items-center text-muted-foreground transition-colors hover:text-foreground"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-                disabled={isSubmitting}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </button>
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Use at least 8 characters, including uppercase, lowercase, and a
-              number.
-            </p>
-          </div>
-
-          <div>
-            <label
-              htmlFor="confirmPassword"
-              className="block text-sm font-medium mb-2"
-            >
-              Confirm new password
-            </label>
-            <div className="relative">
-              <Input
-                id="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                placeholder="••••••••"
-                required
-                autoComplete="new-password"
-                className="h-11 pr-12"
-                disabled={isSubmitting}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword((prev) => !prev)}
-                className="absolute inset-y-0 right-3 flex items-center text-muted-foreground transition-colors hover:text-foreground"
-                aria-label={
-                  showConfirmPassword ? "Hide password" : "Show password"
+                id="token"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                value={token}
+                onChange={(event) =>
+                  setToken(event.target.value.replace(/\D/g, ""))
                 }
-                disabled={isSubmitting}
-              >
-                {showConfirmPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </button>
+                placeholder="Enter 5–6 digit code"
+                required
+                readOnly={isTokenLocked}
+                disabled={isSubmitting && isTokenLocked}
+                className="h-11 tracking-widest"
+              />
+              {isTokenLocked ? (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Code detected from your email link. If it expired, request a
+                  new one.
+                </p>
+              ) : (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Enter the 5–6 digit code we emailed you.
+                </p>
+              )}
             </div>
-          </div>
 
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full h-11 bg-linear-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Updating password...
-              </>
-            ) : (
-              "Update password"
-            )}
-          </Button>
-        </form>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full h-11 bg-linear-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verifying code...
+                </>
+              ) : (
+                "Verify code"
+              )}
+            </Button>
+          </form>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium mb-2"
+              >
+                New password
+              </label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="••••••••"
+                  required
+                  autoComplete="new-password"
+                  className="h-11 pr-12"
+                  disabled={isSubmitting}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-3 flex items-center text-muted-foreground transition-colors hover:text-foreground"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  disabled={isSubmitting}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Use at least 8 characters, including uppercase, lowercase, and a
+                number.
+              </p>
+            </div>
+
+            <div>
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium mb-2"
+              >
+                Confirm new password
+              </label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  placeholder="••••••••"
+                  required
+                  autoComplete="new-password"
+                  className="h-11 pr-12"
+                  disabled={isSubmitting}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-3 flex items-center text-muted-foreground transition-colors hover:text-foreground"
+                  aria-label={
+                    showConfirmPassword ? "Hide password" : "Show password"
+                  }
+                  disabled={isSubmitting}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full h-11 bg-linear-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating password...
+                </>
+              ) : (
+                "Update password"
+              )}
+            </Button>
+          </form>
+        )}
 
         <p className="text-center text-sm text-muted-foreground mt-6">
           Need a new link?{" "}

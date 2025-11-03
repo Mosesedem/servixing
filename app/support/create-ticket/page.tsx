@@ -1,82 +1,89 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useRouter } from "next/navigation"
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card } from "@/components/ui/card"
-import { ArrowLeft } from "lucide-react"
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { ArrowLeft } from "lucide-react";
 
 interface WorkOrder {
-  id: string
-  device: { brand: string; model: string }
+  id: string;
+  device: { brand: string; model: string };
 }
 
 export default function CreateTicketPage() {
-  const router = useRouter()
-  const [workOrders, setWorkOrders] = useState<WorkOrder[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+  const router = useRouter();
+  const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     workOrderId: "",
     priority: "normal",
-  })
+  });
 
   useEffect(() => {
     const fetchWorkOrders = async () => {
       try {
-        const response = await fetch("/api/work-orders")
+        const response = await fetch("/api/work-orders");
         if (response.ok) {
-          const data = await response.json()
-          setWorkOrders(data)
+          const data = await response.json();
+          setWorkOrders(data);
         }
       } catch (error) {
-        console.error("[v0] Error fetching work orders:", error)
+        console.error("[v0] Error fetching work orders:", error);
       }
-    }
+    };
 
-    fetchWorkOrders()
-  }, [])
+    fetchWorkOrders();
+  }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    setLoading(true)
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
     try {
       const response = await fetch("/api/support/tickets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
-      })
+      });
 
       if (!response.ok) {
-        const data = await response.json()
-        setError(data.error || "Failed to create ticket")
-        return
+        const data = await response.json();
+        setError(data.error || "Failed to create ticket");
+        return;
       }
 
-      router.push("/support")
+      router.push("/support");
     } catch (err) {
-      setError("An error occurred. Please try again.")
+      setError("An error occurred. Please try again.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div>
-      <Link href="/support" className="flex items-center gap-2 text-orange-600 hover:text-orange-700 mb-6">
+      <Link
+        href="/support"
+        className="flex items-center gap-2 text-orange-600 hover:text-orange-700 mb-6"
+      >
         <ArrowLeft className="h-4 w-4" />
         Back to Support
       </Link>
@@ -84,7 +91,11 @@ export default function CreateTicketPage() {
       <Card className="max-w-2xl p-8">
         <h1 className="text-3xl font-bold mb-6">Create Support Ticket</h1>
 
-        {error && <div className="bg-red-50 text-red-700 p-4 rounded-lg mb-6">{error}</div>}
+        {error && (
+          <div className="bg-red-50 text-red-700 p-4 rounded-lg mb-6">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
@@ -99,7 +110,9 @@ export default function CreateTicketPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Description</label>
+            <label className="block text-sm font-medium mb-2">
+              Description
+            </label>
             <textarea
               name="description"
               value={formData.description}
@@ -113,7 +126,9 @@ export default function CreateTicketPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Related Work Order (Optional)</label>
+              <label className="block text-sm font-medium mb-2">
+                Related Work Order (Optional)
+              </label>
               <select
                 name="workOrderId"
                 value={formData.workOrderId}
@@ -146,7 +161,11 @@ export default function CreateTicketPage() {
           </div>
 
           <div className="flex gap-4">
-            <Button type="submit" disabled={loading} className="bg-orange-600 hover:bg-orange-700">
+            <Button
+              type="submit"
+              disabled={loading}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
               {loading ? "Creating..." : "Create Ticket"}
             </Button>
             <Link href="/support">
@@ -156,5 +175,5 @@ export default function CreateTicketPage() {
         </form>
       </Card>
     </div>
-  )
+  );
 }
