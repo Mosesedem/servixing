@@ -35,7 +35,7 @@ export async function GET(
 
     return NextResponse.json(ticket);
   } catch (error) {
-    console.error("[v0] Error fetching ticket:", error);
+    console.error(" Error fetching ticket:", error);
     return NextResponse.json(
       { error: "Failed to fetch ticket" },
       { status: 500 }
@@ -90,7 +90,7 @@ export async function PATCH(
 
     return NextResponse.json({ message: "Ticket updated" });
   } catch (error) {
-    console.error("[v0] Error updating ticket:", error);
+    console.error(" Error updating ticket:", error);
     return NextResponse.json(
       { error: "Failed to update ticket" },
       { status: 500 }

@@ -1,19 +1,22 @@
 interface Part {
-  id: string
-  title: string
-  price: number
-  seller: string
-  url: string
-  condition: string
+  id: string;
+  title: string;
+  price: number;
+  seller: string;
+  url: string;
+  condition: string;
 }
 
-export async function searchParts(query: string, brand: string): Promise<Part[]> {
+export async function searchParts(
+  query: string,
+  brand: string
+): Promise<Part[]> {
   // This would integrate with eBay Finding API or marketplace API
   // For now, return mock data structure that can be replaced with real API calls
 
   if (!process.env.EBAY_API_KEY) {
-    console.log("[v0] eBay API key not configured")
-    return []
+    console.log(" eBay API key not configured");
+    return [];
   }
 
   // Mock implementation - replace with actual eBay API call
@@ -34,7 +37,7 @@ export async function searchParts(query: string, brand: string): Promise<Part[]>
       url: "https://ebay.com/item/123457",
       condition: "New",
     },
-  ]
+  ];
 
-  return mockParts
+  return mockParts;
 }

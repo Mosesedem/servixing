@@ -36,7 +36,7 @@ export default function CreateTicketPage() {
           setWorkOrders(data);
         }
       } catch (error) {
-        console.error("[v0] Error fetching work orders:", error);
+        console.error(" Error fetching work orders:", error);
       }
     };
 

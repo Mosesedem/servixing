@@ -36,7 +36,7 @@ export async function GET() {
       pendingPayments,
     });
   } catch (error) {
-    console.error("[v0] Error fetching stats:", error);
+    console.error(" Error fetching stats:", error);
     return NextResponse.json(
       { error: "Failed to fetch stats" },
       { status: 500 }

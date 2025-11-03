@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ parts, count: parts.length });
   } catch (error) {
-    console.error("[v0] Parts search error:", error);
+    console.error(" Parts search error:", error);
     return NextResponse.json({ error: "Parts search failed" }, { status: 500 });
   }
 }

@@ -23,7 +23,7 @@ export async function GET(
 
     return NextResponse.json(article);
   } catch (error) {
-    console.error("[v0] Error fetching article:", error);
+    console.error(" Error fetching article:", error);
     return NextResponse.json(
       { error: "Failed to fetch article" },
       { status: 500 }
@@ -48,7 +48,7 @@ export async function POST(
 
     return NextResponse.json({ message: "Thank you for your feedback" });
   } catch (error) {
-    console.error("[v0] Error updating article:", error);
+    console.error(" Error updating article:", error);
     return NextResponse.json(
       { error: "Failed to update article" },
       { status: 500 }

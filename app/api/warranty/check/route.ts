@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(warranty);
   } catch (error) {
-    console.error("[v0] Warranty check error:", error);
+    console.error(" Warranty check error:", error);
     return NextResponse.json(
       { error: "Warranty check failed" },
       { status: 500 }
