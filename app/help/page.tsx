@@ -1,7 +1,13 @@
-import Link from "next/link";
+"use client";
+
+import { useState, useMemo, useRef, useEffect } from "react";
+import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import Link from "next/link";
+import Fuse from "fuse.js";
+import type { FuseResultMatch } from "fuse.js";
 import {
   Search,
   HelpCircle,
@@ -16,10 +22,80 @@ import {
   CreditCard,
   AlertCircle,
   Lightbulb,
-  FileQuestionIcon,
+  FileQuestion,
 } from "lucide-react";
 
+// Types for search items
+type QuestionItem = {
+  category: string;
+  icon: any;
+  q: string;
+  a: string;
+};
+
+// Render highlighted text using Fuse match indices (no dangerouslySetInnerHTML)
+const renderHighlighted = (
+  text: string,
+  matches: ReadonlyArray<FuseResultMatch> | undefined,
+  key: "q" | "a" | "category"
+): ReactNode => {
+  if (!matches || !text) return text;
+  const match = matches.find((m) => m.key === key);
+  if (!match || !match.indices?.length) return text;
+
+  const parts: Array<string | ReactNode> = [];
+  let lastIndex = 0;
+  match.indices.forEach(([start, end]: [number, number], i: number) => {
+    if (start > lastIndex) {
+      parts.push(text.slice(lastIndex, start));
+    }
+    parts.push(
+      <mark
+        key={`${key}-hl-${i}-${start}-${end}`}
+        className="bg-yellow-200 dark:bg-yellow-800 rounded px-0.5"
+      >
+        {text.slice(start, end + 1)}
+      </mark>
+    );
+    lastIndex = end + 1;
+  });
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+  return <>{parts}</>;
+};
+
 export default function HelpCenterPage() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const resultsRef = useRef<HTMLDivElement | null>(null);
+  const searchRef = useRef<HTMLDivElement | null>(null);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+
+  // Load recent searches
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("help_recent_searches");
+      if (raw) setRecentSearches(JSON.parse(raw));
+    } catch {}
+  }, []);
+
+  const saveRecentSearch = (q: string) => {
+    const value = q.trim();
+    if (!value) return;
+    setRecentSearches((prev) => {
+      const next = [
+        value,
+        ...prev.filter((x) => x.toLowerCase() !== value.toLowerCase()),
+      ].slice(0, 7);
+      try {
+        localStorage.setItem("help_recent_searches", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
+
   const faqs = [
     {
       category: "General",
@@ -127,17 +203,93 @@ export default function HelpCenterPage() {
       href: "/support/create-ticket",
     },
     {
-      icon: FileQuestionIcon,
+      icon: FileQuestion,
       title: "FAQs",
       desc: "Frequently asked questions and answers.",
       href: "/support/create-ticket",
     },
   ];
 
+  // Build flat list for Fuse and prepare grouped results
+  const allQuestions: QuestionItem[] = useMemo(() => {
+    const list: QuestionItem[] = [];
+    faqs.forEach((cat) => {
+      cat.questions.forEach((q) => {
+        list.push({ category: cat.category, icon: cat.icon, q: q.q, a: q.a });
+      });
+    });
+    return list;
+  }, [faqs]);
+
+  const fuse = useMemo(() => {
+    return new Fuse<QuestionItem>(allQuestions, {
+      includeMatches: true,
+      threshold: 0.4,
+      ignoreLocation: true,
+      keys: [
+        { name: "q", weight: 0.6 },
+        { name: "a", weight: 0.3 },
+        { name: "category", weight: 0.1 },
+      ],
+    });
+  }, [allQuestions]);
+
+  const filteredFaqs = useMemo(() => {
+    if (!searchQuery.trim()) return faqs;
+    const query = searchQuery.trim();
+    const results = fuse.search(query);
+
+    const byCategory = new Map<
+      string,
+      {
+        category: string;
+        icon: any;
+        questions: Array<{
+          q: string;
+          a: string;
+          matches?: ReadonlyArray<FuseResultMatch>;
+        }>;
+      }
+    >();
+
+    results
+      .sort((a, b) => (a.score ?? 1) - (b.score ?? 1))
+      .forEach((res) => {
+        const item = res.item;
+        if (!byCategory.has(item.category)) {
+          byCategory.set(item.category, {
+            category: item.category,
+            icon: item.icon,
+            questions: [],
+          });
+        }
+        const bucket = byCategory.get(item.category)!;
+        bucket.questions.push({ q: item.q, a: item.a, matches: res.matches });
+      });
+
+    return Array.from(byCategory.values());
+  }, [fuse, searchQuery, faqs]);
+
+  const hasSearchResults = searchQuery.trim() && filteredFaqs.length > 0;
+  const hasNoResults = searchQuery.trim() && filteredFaqs.length === 0;
+
+  // Keep search bar in view when searching (don't jump away to results)
+  useEffect(() => {
+    if (!searchQuery.trim() || !searchRef.current) return;
+    const el = searchRef.current;
+    const rect = el.getBoundingClientRect();
+    const vh = window.innerHeight || document.documentElement.clientHeight;
+    const padding = 16; // small top/bottom threshold
+    const isFullyInView = rect.top >= padding && rect.bottom <= vh - padding;
+    if (!isFullyInView) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [searchQuery]);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="bg-linear-to-br from-orange-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 py-16 sm:py-20">
+      <section className="bg-orange-50 dark:bg-gray-900 py-16 sm:py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl sm:text-5xl font-bold mb-6">
             How Can We Help You?
@@ -146,69 +298,294 @@ export default function HelpCenterPage() {
             Search our knowledge base or browse common questions below
           </p>
 
-          <div className="relative max-w-2xl mx-auto">
+          <div ref={searchRef} className="relative max-w-2xl mx-auto">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
-              placeholder="Search for help articles..."
+              placeholder="Try 'warranty', 'repair cost', or 'track order'..."
               className="pl-12 h-14 text-base bg-background"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowSuggestions(true);
+                setHighlightedIndex(-1);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 100)}
+              onKeyDown={(e) => {
+                const suggestions = searchQuery.trim()
+                  ? recentSearches.filter((r) =>
+                      r.toLowerCase().includes(searchQuery.trim().toLowerCase())
+                    )
+                  : recentSearches;
+                if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  if (!suggestions.length) return;
+                  setHighlightedIndex((i) => (i + 1) % suggestions.length);
+                  setShowSuggestions(true);
+                } else if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  if (!suggestions.length) return;
+                  setHighlightedIndex(
+                    (i) => (i - 1 + suggestions.length) % suggestions.length
+                  );
+                  setShowSuggestions(true);
+                } else if (e.key === "Enter") {
+                  const pick = suggestions[highlightedIndex];
+                  const value = pick ?? searchQuery.trim();
+                  if (value) {
+                    setSearchQuery(value);
+                    saveRecentSearch(value);
+                    setShowSuggestions(false);
+                  }
+                } else if (e.key === "Escape") {
+                  setShowSuggestions(false);
+                }
+              }}
             />
-          </div>
-        </div>
-      </section>
 
-      {/* Quick Links */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 -mt-8">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {quickLinks.map((link) => (
-            <Link key={link.title} href={link.href}>
-              <Card className="p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer border-2 hover:border-orange-200 dark:hover:border-orange-800">
-                <link.icon className="h-8 w-8 text-orange-600 mb-3" />
-                <h3 className="font-semibold mb-1">{link.title}</h3>
-                <p className="text-sm text-muted-foreground">{link.desc}</p>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* FAQs */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">
-            Frequently Asked Questions
-          </h2>
-          <p className="text-lg text-muted-foreground">
-            Find answers to common questions about our services
-          </p>
-        </div>
-
-        <div className="grid lg:grid-cols-2 gap-8">
-          {faqs.map((category) => (
-            <div key={category.category}>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/30">
-                  <category.icon className="h-6 w-6 text-orange-600" />
+            {/* Suggestions dropdown */}
+            {showSuggestions &&
+              (recentSearches.length > 0 || searchQuery.trim()) && (
+                <div
+                  role="listbox"
+                  aria-label="Recent searches"
+                  className="absolute z-20 mt-2 w-full rounded-md border bg-background shadow-md overflow-hidden"
+                >
+                  <div className="flex items-center justify-between px-3 py-2 text-xs text-muted-foreground border-b">
+                    <span>Recent searches</span>
+                    {recentSearches.length > 0 && (
+                      <button
+                        type="button"
+                        className="hover:underline"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          setRecentSearches([]);
+                          try {
+                            localStorage.removeItem("help_recent_searches");
+                          } catch {}
+                        }}
+                      >
+                        Clear all
+                      </button>
+                    )}
+                  </div>
+                  {(() => {
+                    const items = searchQuery.trim()
+                      ? recentSearches.filter((r) =>
+                          r
+                            .toLowerCase()
+                            .includes(searchQuery.trim().toLowerCase())
+                        )
+                      : recentSearches;
+                    return items.length ? (
+                      items.map((item, idx) => (
+                        <div
+                          key={item + idx}
+                          role="option"
+                          aria-selected={idx === highlightedIndex}
+                          className={`px-3 py-2 text-sm flex items-center justify-between cursor-pointer ${
+                            idx === highlightedIndex
+                              ? "bg-orange-50 dark:bg-orange-950/30"
+                              : ""
+                          }`}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            setSearchQuery(item);
+                            saveRecentSearch(item);
+                            setShowSuggestions(false);
+                          }}
+                          onMouseEnter={() => setHighlightedIndex(idx)}
+                        >
+                          <span className="truncate">{item}</span>
+                          <button
+                            aria-label={`Remove ${item} from recent searches`}
+                            className="ml-3 text-xs text-muted-foreground hover:underline"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRecentSearches((prev) => {
+                                const next = prev.filter((p) => p !== item);
+                                try {
+                                  localStorage.setItem(
+                                    "help_recent_searches",
+                                    JSON.stringify(next)
+                                  );
+                                } catch {}
+                                return next;
+                              });
+                            }}
+                          >
+                            remove
+                          </button>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-3 py-2 text-xs text-muted-foreground">
+                        No recent searches
+                      </div>
+                    );
+                  })()}
                 </div>
-                <h3 className="text-2xl font-bold">{category.category}</h3>
-              </div>
+              )}
+          </div>
 
-              <div className="space-y-4">
-                {category.questions.map((item, i) => (
-                  <Card key={i} className="p-6">
-                    <h4 className="font-semibold text-lg mb-3 flex items-start gap-2">
-                      <HelpCircle className="h-5 w-5 text-orange-600 shrink-0 mt-0.5" />
-                      {item.q}
-                    </h4>
-                    <p className="text-muted-foreground leading-relaxed pl-7">
-                      {item.a}
-                    </p>
-                  </Card>
-                ))}
-              </div>
+          {hasSearchResults && (
+            <div className="mt-4 text-sm text-muted-foreground">
+              <p className="font-medium">
+                Found{" "}
+                {filteredFaqs.reduce(
+                  (acc, cat) => acc + cat.questions.length,
+                  0
+                )}{" "}
+                result(s) for "{searchQuery}"
+              </p>
             </div>
-          ))}
+          )}
         </div>
       </section>
+
+      {/* Search Results or Quick Links */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 -mt-8">
+        {!searchQuery.trim() && (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {quickLinks.map((link) => (
+              <Link key={link.title} href={link.href}>
+                <Card className="p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer border-2 hover:border-orange-200 dark:hover:border-orange-800">
+                  <link.icon className="h-8 w-8 text-orange-600 mb-3" />
+                  <h3 className="font-semibold mb-1">{link.title}</h3>
+                  <p className="text-sm text-muted-foreground">{link.desc}</p>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Search Results Section */}
+      {searchQuery.trim() && (
+        <section
+          ref={resultsRef}
+          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+        >
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold mb-2">Search Results</h2>
+            <p className="text-muted-foreground">
+              Results are ranked by relevance to your query
+            </p>
+          </div>
+
+          {hasNoResults ? (
+            <div className="text-center py-12">
+              <Search className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-xl font-semibold mb-2">No results found</h3>
+              <p className="text-muted-foreground mb-4">
+                We couldn't find any articles matching "{searchQuery}"
+              </p>
+              <Button variant="outline" onClick={() => setSearchQuery("")}>
+                Clear Search
+              </Button>
+            </div>
+          ) : (
+            <div className="grid lg:grid-cols-2 gap-8">
+              {filteredFaqs.map((category) => (
+                <div key={category.category}>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/30">
+                      <category.icon className="h-6 w-6 text-orange-600" />
+                    </div>
+                    <h3 className="text-2xl font-bold">{category.category}</h3>
+                  </div>
+
+                  <div className="space-y-3">
+                    {category.questions.map(
+                      (
+                        item: {
+                          q: string;
+                          a: string;
+                          matches?: ReadonlyArray<FuseResultMatch>;
+                        },
+                        i: number
+                      ) => (
+                        <Card
+                          key={i}
+                          className="p-0 overflow-hidden border-l-4 border-l-orange-500"
+                        >
+                          <details className="group open:bg-orange-50/30 dark:open:bg-orange-950/20">
+                            <summary className="list-none cursor-pointer select-none p-6 flex items-start gap-2">
+                              <HelpCircle className="h-5 w-5 text-orange-600 shrink-0 mt-0.5" />
+                              <span className="font-semibold text-lg">
+                                {renderHighlighted(item.q, item.matches, "q")}
+                              </span>
+                              <span className="ml-auto transition-transform group-open:rotate-180">
+                                ▾
+                              </span>
+                            </summary>
+                            <div className="px-6 pb-6 -mt-2">
+                              <p className="text-muted-foreground leading-relaxed pl-7">
+                                {renderHighlighted(item.a, item.matches, "a")}
+                              </p>
+                            </div>
+                          </details>
+                        </Card>
+                      )
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* FAQs - Only show when no search */}
+      {!searchQuery.trim() && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              Find answers to common questions about our services
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-8">
+            {faqs.map((category) => (
+              <div key={category.category}>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/30">
+                    <category.icon className="h-6 w-6 text-orange-600" />
+                  </div>
+                  <h3 className="text-2xl font-bold">{category.category}</h3>
+                </div>
+
+                <div className="space-y-3">
+                  {category.questions.map((item, i) => (
+                    <Card key={i} className="p-0 overflow-hidden">
+                      <details className="group">
+                        <summary className="list-none cursor-pointer select-none p-6 flex items-start gap-2">
+                          <HelpCircle className="h-5 w-5 text-orange-600 shrink-0 mt-0.5" />
+                          <span className="font-semibold text-lg">
+                            {item.q}
+                          </span>
+                          <span className="ml-auto transition-transform group-open:rotate-180">
+                            ▾
+                          </span>
+                        </summary>
+                        <div className="px-6 pb-6 -mt-2">
+                          <p className="text-muted-foreground leading-relaxed pl-7">
+                            {item.a}
+                          </p>
+                        </div>
+                      </details>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Getting Started */}
       <section
