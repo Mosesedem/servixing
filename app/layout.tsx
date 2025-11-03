@@ -6,7 +6,7 @@ import "./globals.css";
 import Providers from "@/components/providers";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import { Navbar } from "@/components/navbar";
+import { ConditionalNavbar } from "@/components/conditional-navbar";
 
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
@@ -52,7 +52,7 @@ export default async function RootLayout({
     <html lang="en">
       <body className={`font-sans antialiased`}>
         <Providers session={session}>
-          <Navbar />
+          <ConditionalNavbar />
 
           {children}
         </Providers>
