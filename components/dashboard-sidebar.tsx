@@ -9,6 +9,11 @@ import {
   CreditCard,
   Menu,
   X,
+  Shield,
+  Settings,
+  User,
+  MapPin,
+  Download,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -45,6 +50,34 @@ export function DashboardSidebar() {
       icon: CreditCard,
       label: "Payments",
     },
+    {
+      href: "/services/warranty-device-check",
+      icon: Shield,
+      label: "Warranty Check",
+    },
+    {
+      href: "/dashboard/invoices",
+      icon: Download,
+      label: "Invoices",
+    },
+  ];
+
+  const settingsLinks = [
+    {
+      href: "/dashboard/settings/profile",
+      icon: User,
+      label: "Profile",
+    },
+    {
+      href: "/dashboard/settings/account",
+      icon: Settings,
+      label: "Account",
+    },
+    {
+      href: "/dashboard/settings/addresses",
+      icon: MapPin,
+      label: "Addresses",
+    },
   ];
 
   return (
@@ -77,32 +110,67 @@ export function DashboardSidebar() {
           }
         `}
       >
-        <nav className="space-y-2 mt-16 md:mt-0">
-          {links.map((link) => {
-            const Icon = link.icon;
-            const active = isActive(link.href);
+        <nav className="space-y-6 mt-16 md:mt-0">
+          {/* Main Navigation */}
+          <div className="space-y-2">
+            {links.map((link) => {
+              const Icon = link.icon;
+              const active = isActive(link.href);
 
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <div
-                  className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
-                    active
-                      ? "bg-orange-50 dark:bg-orange-900/30 text-orange-600 font-semibold"
-                      : "hover:bg-muted text-muted-foreground hover:text-foreground"
-                  }`}
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileMenuOpen(false)}
                 >
-                  <Icon
-                    className={`h-5 w-5 ${active ? "text-orange-600" : ""}`}
-                  />
-                  <span>{link.label}</span>
-                </div>
-              </Link>
-            );
-          })}
+                  <div
+                    className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
+                      active
+                        ? "bg-orange-50 dark:bg-orange-900/30 text-orange-600 font-semibold"
+                        : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Icon
+                      className={`h-5 w-5 ${active ? "text-orange-600" : ""}`}
+                    />
+                    <span>{link.label}</span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Settings Section */}
+          <div className="space-y-2">
+            <div className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Settings
+            </div>
+            {settingsLinks.map((link) => {
+              const Icon = link.icon;
+              const active = isActive(link.href);
+
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <div
+                    className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
+                      active
+                        ? "bg-orange-50 dark:bg-orange-900/30 text-orange-600 font-semibold"
+                        : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Icon
+                      className={`h-5 w-5 ${active ? "text-orange-600" : ""}`}
+                    />
+                    <span>{link.label}</span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
         </nav>
       </aside>
 
