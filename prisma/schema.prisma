@@ -32,6 +32,14 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum RefundStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
 enum DropoffType {
   DROPOFF
   DISPATCH
@@ -328,12 +336,40 @@ model Payment {
   user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   workOrder WorkOrder?   @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
   logs      PaymentLog[]
+  refunds   Refund[]
 
   @@index([userId])
   @@index([status])
   @@index([paystackReference])
   @@index([createdAt])
   @@map("payments")
+}
+
+model Refund {
+  id        String @id @default(cuid())
+  paymentId String
+
+  // Refund details
+  amount           Decimal      @db.Decimal(10, 2)
+  reason           String
+  status           RefundStatus @default(PENDING)
+  requestedBy      String // Admin user ID
+  paystackRefundId String?
+
+  // Processing
+  processedAt  DateTime?
+  failedAt     DateTime?
+  errorMessage String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+  @@index([requestedBy])
+  @@map("refunds")
 }
 
 model PaymentLog {
@@ -349,6 +385,25 @@ model PaymentLog {
 
   @@index([paymentId])
   @@map("payment_logs")
+}
+
+model WebhookLog {
+  id String @id @default(cuid())
+
+  provider  String // "paystack", "flutterwave", etc.
+  event     String
+  payload   Json
+  signature String?
+
+  processed Boolean @default(false)
+  error     String?
+
+  createdAt DateTime @default(now())
+
+  @@index([provider])
+  @@index([event])
+  @@index([createdAt])
+  @@map("webhook_logs")
 }
 
 // Parts Models

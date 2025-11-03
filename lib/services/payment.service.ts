@@ -305,6 +305,236 @@ export class PaymentService {
       },
     };
   }
+
+  /**
+   * Initiate refund for a payment
+   */
+  async initiateRefund(data: {
+    paymentId: string;
+    amount?: number; // Optional partial refund
+    reason: string;
+    requestedBy: string; // Admin user ID
+  }) {
+    const payment = await db.payment.findUnique({
+      where: { id: data.paymentId },
+      include: {
+        workOrder: true,
+        user: true,
+      },
+    });
+
+    if (!payment) {
+      throw new NotFoundError("Payment");
+    }
+
+    if (payment.status !== "PAID") {
+      throw new PaymentError("Only paid payments can be refunded");
+    }
+
+    if (payment.status === "REFUNDED") {
+      throw new PaymentError("Payment already refunded");
+    }
+
+    const refundAmount = data.amount || Number(payment.amount);
+    if (refundAmount > Number(payment.amount)) {
+      throw new PaymentError("Refund amount exceeds payment amount");
+    }
+
+    try {
+      // Initiate Paystack refund
+      const response = await fetch("https://api.paystack.co/refund", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          transaction: payment.paystackReference,
+          amount: Math.round(refundAmount * 100), // Convert to kobo
+          merchant_note: data.reason,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!result.status) {
+        throw new PaymentError(result.message || "Refund initiation failed");
+      }
+
+      // Create refund record
+      const refund = await db.refund.create({
+        data: {
+          paymentId: payment.id,
+          amount: new Decimal(refundAmount),
+          reason: data.reason,
+          status: "PENDING",
+          requestedBy: data.requestedBy,
+          paystackRefundId: result.data.id?.toString(),
+        },
+      });
+
+      // Log refund initiation
+      await db.paymentLog.create({
+        data: {
+          paymentId: payment.id,
+          event: "refund_initiated",
+          response: result,
+        },
+      });
+
+      // Update payment status if full refund
+      if (refundAmount === Number(payment.amount)) {
+        await db.payment.update({
+          where: { id: payment.id },
+          data: { status: "REFUNDED" },
+        });
+
+        // Update work order
+        if (payment.workOrderId) {
+          await db.workOrder.update({
+            where: { id: payment.workOrderId },
+            data: { paymentStatus: "REFUNDED" },
+          });
+        }
+      }
+
+      logger.info(
+        `Refund initiated: ${refund.id} for payment ${payment.id}, Amount: ₦${refundAmount}`
+      );
+
+      return {
+        refundId: refund.id,
+        amount: refundAmount,
+        status: "PENDING",
+      };
+    } catch (error) {
+      logger.error(
+        "Refund initiation failed:",
+        error instanceof Error ? error : new Error(String(error))
+      );
+      throw new PaymentError("Failed to initiate refund");
+    }
+  }
+
+  /**
+   * Get refund details
+   */
+  async getRefund(refundId: string) {
+    const refund = await db.refund.findUnique({
+      where: { id: refundId },
+      include: {
+        payment: {
+          include: {
+            workOrder: {
+              include: {
+                device: true,
+              },
+            },
+            user: true,
+          },
+        },
+      },
+    });
+
+    if (!refund) {
+      throw new NotFoundError("Refund");
+    }
+
+    return refund;
+  }
+
+  /**
+   * Get payment analytics
+   */
+  async getPaymentAnalytics(dateFrom?: Date, dateTo?: Date) {
+    const where =
+      dateFrom && dateTo
+        ? {
+            createdAt: {
+              gte: dateFrom,
+              lte: dateTo,
+            },
+          }
+        : {};
+
+    const [
+      totalPayments,
+      successfulPayments,
+      failedPayments,
+      refundedPayments,
+      totalRevenue,
+      avgTransactionValue,
+    ] = await Promise.all([
+      db.payment.count({ where }),
+      db.payment.count({ where: { ...where, status: "PAID" } }),
+      db.payment.count({ where: { ...where, status: "FAILED" } }),
+      db.payment.count({ where: { ...where, status: "REFUNDED" } }),
+      db.payment.aggregate({
+        where: { ...where, status: "PAID" },
+        _sum: { amount: true },
+      }),
+      db.payment.aggregate({
+        where: { ...where, status: "PAID" },
+        _avg: { amount: true },
+      }),
+    ]);
+
+    const totalRefunds = await db.refund.aggregate({
+      where: {
+        status: "COMPLETED",
+        createdAt:
+          dateFrom && dateTo ? { gte: dateFrom, lte: dateTo } : undefined,
+      },
+      _sum: { amount: true },
+    });
+
+    const successRate =
+      totalPayments > 0 ? (successfulPayments / totalPayments) * 100 : 0;
+
+    return {
+      totalPayments,
+      successfulPayments,
+      failedPayments,
+      refundedPayments,
+      totalRevenue: Number(totalRevenue._sum.amount || 0),
+      totalRefunds: Number(totalRefunds._sum.amount || 0),
+      netRevenue:
+        Number(totalRevenue._sum.amount || 0) -
+        Number(totalRefunds._sum.amount || 0),
+      avgTransactionValue: Number(avgTransactionValue._avg.amount || 0),
+      successRate: Number(successRate.toFixed(2)),
+    };
+  }
+
+  /**
+   * Get recent payments (for admin dashboard)
+   */
+  async getRecentPayments(limit = 10) {
+    return db.payment.findMany({
+      take: limit,
+      orderBy: { createdAt: "desc" },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        workOrder: {
+          select: {
+            id: true,
+            device: {
+              select: {
+                brand: true,
+                model: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
 }
 
 // Export singleton instance
