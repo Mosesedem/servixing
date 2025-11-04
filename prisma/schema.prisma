@@ -272,6 +272,7 @@ model SupportTicket {
   status      TicketStatus @default(OPEN)
   priority    String       @default("normal") // low, normal, high, urgent
   assignedTo  String? // admin user ID
+  metadata    Json?
 
   // Soft delete
   deletedAt DateTime?

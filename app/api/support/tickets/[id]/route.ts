@@ -67,15 +67,19 @@ export async function PATCH(
       return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
     }
 
-    const { status, message } = await req.json();
+    const { status, message, attachments } = await req.json();
 
     // Add message if provided
-    if (message) {
+    if (
+      message ||
+      (attachments && Array.isArray(attachments) && attachments.length)
+    ) {
       await prisma.ticketMessage.create({
         data: {
           ticketId: id,
           userId: session.user.id,
-          message,
+          message: message || "",
+          attachments: Array.isArray(attachments) ? attachments : [],
         },
       });
     }

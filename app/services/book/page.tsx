@@ -7,13 +7,13 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { ImageUpload } from "@/components/image-upload";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import {
   ArrowLeft,
   CheckCircle,
   Shield,
   Clock,
-  DollarSign,
   Info,
   AlertCircle,
 } from "lucide-react";
@@ -24,6 +24,7 @@ export default function BookRepairPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [images, setImages] = useState<File[]>([]);
 
   const [formData, setFormData] = useState({
     name: session?.user?.name || "",
@@ -34,7 +35,17 @@ export default function BookRepairPage() {
     model: "",
     issue: "",
     dropoffType: "DROPOFF" as "DROPOFF" | "DISPATCH",
-    address: "",
+    // Structured address fields for better detail
+    addressLine1: "",
+    addressLine2: "",
+    city: "",
+    state: "",
+    postalCode: "",
+    landmark: "",
+    // Optional extra request from customer
+    customerRequest: "",
+    // Honeypot (spam protection)
+    hp: "",
   });
 
   const deviceTypes = [
@@ -94,19 +105,74 @@ export default function BookRepairPage() {
         return;
       }
 
-      if (formData.dropoffType === "DISPATCH" && !formData.address) {
-        setError("Please provide a dispatch address");
+      // If dispatch, validate structured address fields
+      if (formData.dropoffType === "DISPATCH") {
+        if (!formData.addressLine1 || !formData.city || !formData.state) {
+          setError(
+            "Please provide address line 1, city, and state for dispatch"
+          );
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Validate images count and size (client-side)
+      if (images.length > 3) {
+        setError("Maximum 3 images allowed");
         setLoading(false);
         return;
       }
+      for (const file of images) {
+        if (file.size > 5 * 1024 * 1024) {
+          setError("Each image must be 5MB or smaller");
+          setLoading(false);
+          return;
+        }
+      }
 
-      // Create support ticket for the repair request
-      const ticketResponse = await fetch("/api/support/tickets", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: `Repair Request: ${formData.brand} ${formData.deviceType}`,
-          description: `
+      // Build full address string if dispatch
+      const addressText =
+        formData.dropoffType === "DISPATCH"
+          ? [
+              formData.addressLine1,
+              formData.addressLine2,
+              `${formData.city}${formData.state ? ", " + formData.state : ""}`,
+              formData.postalCode,
+              formData.landmark ? `Landmark: ${formData.landmark}` : "",
+            ]
+              .filter(Boolean)
+              .join("\n")
+          : "Drop-off at service center";
+
+      // Authenticated vs Guest submission flows
+      let imageUrls: string[] = [];
+      if (session?.user?.id) {
+        // Logged-in: upload images first, then create ticket
+        if (images.length > 0) {
+          const fd = new FormData();
+          images.forEach((file) => fd.append("images", file));
+          const uploadRes = await fetch("/api/devices/upload", {
+            method: "POST",
+            body: fd,
+          });
+          if (!uploadRes.ok) {
+            const data = await uploadRes.json().catch(() => ({}));
+            throw new Error(
+              data?.error?.message ||
+                "Failed to upload images. Please try again."
+            );
+          }
+          const uploadData = await uploadRes.json();
+          imageUrls = uploadData?.data?.images || [];
+        }
+
+        // Create support ticket for the repair request
+        const ticketResponse = await fetch("/api/support/tickets", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: `Repair Request: ${formData.brand} ${formData.deviceType}`,
+            description: `
 **Customer Details:**
 - Name: ${formData.name}
 - Email: ${formData.email}
@@ -124,19 +190,120 @@ ${formData.issue}
 ${
   formData.dropoffType === "DROPOFF"
     ? "Drop-off at service center"
-    : `Dispatch pickup at: ${formData.address}`
+    : `Dispatch pickup at:\n${addressText}`
 }
-          `,
-          priority: "normal",
-        }),
-      });
 
-      if (!ticketResponse.ok) {
-        const data = await ticketResponse.json();
-        throw new Error(data.error || "Failed to submit repair request");
+${
+  formData.customerRequest
+    ? `\n**Customer Request (Optional):**\n${formData.customerRequest}`
+    : ""
+}
+
+${
+  imageUrls.length
+    ? `\n**Attached Images:**\n${imageUrls
+        .map((u, i) => `![Image ${i + 1}](${u})`)
+        .join("\n")}`
+    : ""
+}
+            `,
+            priority: "normal",
+            metadata: {
+              contact: {
+                name: formData.name,
+                email: formData.email,
+                phone: formData.phone,
+              },
+              device: {
+                deviceType: formData.deviceType,
+                brand: formData.brand,
+                model: formData.model || null,
+              },
+              issue: formData.issue,
+              dropoffType: formData.dropoffType,
+              address:
+                formData.dropoffType === "DISPATCH"
+                  ? {
+                      addressLine1: formData.addressLine1,
+                      addressLine2: formData.addressLine2,
+                      city: formData.city,
+                      state: formData.state,
+                      postalCode: formData.postalCode,
+                      landmark: formData.landmark,
+                    }
+                  : null,
+              customerRequest: formData.customerRequest || null,
+              images: imageUrls,
+              submittedAt: new Date().toISOString(),
+              source: "authenticated_form",
+            },
+          }),
+        });
+
+        if (!ticketResponse.ok) {
+          const data = await ticketResponse.json();
+          throw new Error(data.error || "Failed to submit repair request");
+        }
+
+        const createdTicket = await ticketResponse.json();
+
+        // If images exist, add them as TicketMessage attachments for better rendering
+        if (imageUrls.length && createdTicket?.id) {
+          try {
+            await fetch(`/api/support/tickets/${createdTicket.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                message: "Images attached with repair request.",
+                attachments: imageUrls,
+              }),
+            });
+          } catch (e) {
+            console.error(
+              "Failed to add image attachments to ticket message",
+              e
+            );
+          }
+        }
+
+        setSuccess(true);
+      } else {
+        // Guest: submit everything to public endpoint as multipart form
+        const fd = new FormData();
+        fd.set("name", formData.name);
+        fd.set("email", formData.email);
+        fd.set("phone", formData.phone);
+        fd.set("deviceType", formData.deviceType);
+        fd.set("hp", (formData as any).hp || "");
+        fd.set("brand", formData.brand);
+        fd.set("model", formData.model || "");
+        fd.set("issue", formData.issue);
+        fd.set("dropoffType", formData.dropoffType);
+        if (formData.dropoffType === "DISPATCH") {
+          fd.set("addressLine1", formData.addressLine1);
+          fd.set("addressLine2", formData.addressLine2 || "");
+          fd.set("city", formData.city);
+          fd.set("state", formData.state);
+          fd.set("postalCode", formData.postalCode || "");
+          fd.set("landmark", formData.landmark || "");
+        }
+        if (formData.customerRequest) {
+          fd.set("customerRequest", formData.customerRequest);
+        }
+        images.forEach((file) => fd.append("images", file));
+
+        const resp = await fetch("/api/public/repair-request", {
+          method: "POST",
+          body: fd,
+        });
+        if (!resp.ok) {
+          const data = await resp.json().catch(() => ({}));
+          throw new Error(
+            data?.error?.message || "Failed to submit repair request"
+          );
+        }
+        setSuccess(true);
       }
-
-      setSuccess(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
       setLoading(false);
@@ -275,6 +442,17 @@ ${
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Honeypot field */}
+            <input
+              type="text"
+              name="hp"
+              value={(formData as any).hp}
+              onChange={handleChange}
+              className="hidden"
+              aria-hidden="true"
+              tabIndex={-1}
+              autoComplete="off"
+            />
             {/* Contact Information */}
             <div className="space-y-4">
               <h3 className="font-semibold text-lg">Contact Information</h3>
@@ -413,6 +591,20 @@ ${
               </p>
             </div>
 
+            {/* Images */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Device Images (up to 3, 5MB each)
+              </label>
+              <ImageUpload
+                value={images}
+                onChange={setImages}
+                maxFiles={3}
+                maxSize={5}
+                disabled={loading}
+              />
+            </div>
+
             {/* Service Type */}
             <div className="space-y-4">
               <h3 className="font-semibold text-lg">Service Type</h3>
@@ -472,22 +664,113 @@ ${
               </div>
 
               {formData.dropoffType === "DISPATCH" && (
-                <div className="space-y-2">
-                  <label htmlFor="address" className="text-sm font-medium">
-                    Pickup Address <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    id="address"
-                    name="address"
-                    value={formData.address}
-                    onChange={handleChange}
-                    placeholder="Enter your full pickup address..."
-                    rows={3}
-                    className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-600"
-                    required={formData.dropoffType === "DISPATCH"}
-                  />
+                <div className="space-y-4">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="addressLine1"
+                        className="text-sm font-medium"
+                      >
+                        Address Line 1 <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        id="addressLine1"
+                        name="addressLine1"
+                        value={formData.addressLine1}
+                        onChange={handleChange}
+                        placeholder="House/Apartment, Street"
+                        required={formData.dropoffType === "DISPATCH"}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="addressLine2"
+                        className="text-sm font-medium"
+                      >
+                        Address Line 2 (Optional)
+                      </label>
+                      <Input
+                        id="addressLine2"
+                        name="addressLine2"
+                        value={formData.addressLine2}
+                        onChange={handleChange}
+                        placeholder="Area, Estate, etc."
+                      />
+                    </div>
+                  </div>
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <label htmlFor="city" className="text-sm font-medium">
+                        City <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        id="city"
+                        name="city"
+                        value={formData.city}
+                        onChange={handleChange}
+                        placeholder="e.g., Lagos"
+                        required={formData.dropoffType === "DISPATCH"}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="state" className="text-sm font-medium">
+                        State/Region <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        id="state"
+                        name="state"
+                        value={formData.state}
+                        onChange={handleChange}
+                        placeholder="e.g., Lagos State"
+                        required={formData.dropoffType === "DISPATCH"}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="postalCode"
+                        className="text-sm font-medium"
+                      >
+                        Postal Code (Optional)
+                      </label>
+                      <Input
+                        id="postalCode"
+                        name="postalCode"
+                        value={formData.postalCode}
+                        onChange={handleChange}
+                        placeholder="e.g., 100001"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="landmark" className="text-sm font-medium">
+                      Landmark/Notes (Optional)
+                    </label>
+                    <Input
+                      id="landmark"
+                      name="landmark"
+                      value={formData.landmark}
+                      onChange={handleChange}
+                      placeholder="Nearby landmark or delivery note"
+                    />
+                  </div>
                 </div>
               )}
+            </div>
+
+            {/* Optional Customer Request */}
+            <div className="space-y-2">
+              <label htmlFor="customerRequest" className="text-sm font-medium">
+                Customer's Request (Optional)
+              </label>
+              <textarea
+                id="customerRequest"
+                name="customerRequest"
+                value={formData.customerRequest}
+                onChange={handleChange}
+                placeholder="Any specific requests, preferences, or notes for our technicians"
+                rows={4}
+                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-600"
+              />
             </div>
 
             {/* Info Box */}
