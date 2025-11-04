@@ -30,3 +30,26 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+
+export async function POST(req: NextRequest) {
+  try {
+    const data = await req.json();
+    const newArticle = await prisma.knowledgeBaseArticle.create({
+      data: {
+        title: data.title,
+        slug: data.slug,
+        content: data.content,
+        category: data.category,
+        published: data.published || false,
+      },
+    });
+
+    return NextResponse.json(newArticle, { status: 201 });
+  } catch (error) {
+    console.error(" Error creating article:", error);
+    return NextResponse.json(
+      { error: "Failed to create article" },
+      { status: 500 }
+    );
+  }
+}

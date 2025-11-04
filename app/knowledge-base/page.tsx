@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Eye, ThumbsUp } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 interface Article {
   id: string;
@@ -20,6 +22,10 @@ export default function KnowledgeBasePage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [likingSlug, setLikingSlug] = useState<string | null>(null);
+  const [liked, setLiked] = useState<Record<string, boolean>>({});
+  const { status } = useSession();
+  const isAuthed = status === "authenticated";
 
   useEffect(() => {
     const fetchArticles = async () => {
@@ -32,8 +38,18 @@ export default function KnowledgeBasePage() {
 
         const response = await fetch(url);
         if (response.ok) {
-          const data = await response.json();
+          const data: Article[] = await response.json();
           setArticles(data);
+
+          // initialize liked map from localStorage
+          const map: Record<string, boolean> = {};
+          if (typeof window !== "undefined") {
+            for (const a of data) {
+              const key = `kb_${a.slug}_liked`;
+              map[a.slug] = window.localStorage.getItem(key) === "1";
+            }
+          }
+          setLiked(map);
         }
       } catch (error) {
         console.error(" Error fetching articles:", error);
@@ -63,6 +79,49 @@ export default function KnowledgeBasePage() {
         return "bg-green-100 text-green-800";
       default:
         return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const handleToggleLike = async (e: React.MouseEvent, slug: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (likingSlug) return;
+    const key = `kb_${slug}_liked`;
+    const isLiked = liked[slug] === true;
+    const action = isLiked ? "unlike" : "like";
+    try {
+      setLikingSlug(slug);
+      const res = await fetch(`/api/knowledge-base/${slug}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const data = await res.json().catch(() => ({}));
+      setArticles((prev) =>
+        prev.map((a) =>
+          a.slug === slug
+            ? {
+                ...a,
+                helpful:
+                  typeof data.helpful === "number"
+                    ? data.helpful
+                    : a.helpful + (action === "like" ? 1 : -1),
+              }
+            : a
+        )
+      );
+      if (typeof window !== "undefined") {
+        if (action === "like") {
+          window.localStorage.setItem(key, "1");
+        } else {
+          window.localStorage.removeItem(key);
+        }
+      }
+      setLiked((prev) => ({ ...prev, [slug]: action === "like" }));
+    } catch (err) {
+      // ignore
+    } finally {
+      setLikingSlug(null);
     }
   };
 
@@ -128,7 +187,7 @@ export default function KnowledgeBasePage() {
           {articles.map((article) => (
             <Link key={article.id} href={`/knowledge-base/${article.slug}`}>
               <Card className="p-6 hover:bg-muted/50 cursor-pointer transition">
-                <div className="flex justify-between items-start">
+                <div className="flex justify-between items-start gap-4">
                   <div className="flex-1">
                     <h2 className="text-xl font-semibold mb-2">
                       {article.title}
@@ -150,6 +209,21 @@ export default function KnowledgeBasePage() {
                         {article.helpful}
                       </div>
                     </div>
+                  </div>
+                  <div className="shrink-0">
+                    <Button
+                      size="sm"
+                      className="bg-orange-600 hover:bg-orange-700"
+                      disabled={!isAuthed || likingSlug === article.slug}
+                      onClick={(e) => handleToggleLike(e, article.slug)}
+                    >
+                      <ThumbsUp className="h-4 w-4 mr-1" />
+                      {isAuthed
+                        ? liked[article.slug]
+                          ? "Unlike"
+                          : "Like"
+                        : "Sign in to like"}
+                    </Button>
                   </div>
                 </div>
               </Card>
