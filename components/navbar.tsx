@@ -71,7 +71,7 @@ export function Navbar() {
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between p-2">
             {/* Logo */}
             <Link
               href="/"
@@ -243,7 +243,7 @@ export function Navbar() {
                   <Button
                     asChild
                     variant="ghost"
-                    size="sm"
+                    size="md"
                     className="text-muted-foreground hover:text-foreground transition-all duration-300 hover:scale-105"
                   >
                     <Link href="/dashboard" className="flex items-center gap-2">
@@ -256,7 +256,7 @@ export function Navbar() {
                     <Button
                       asChild
                       variant="ghost"
-                      size="sm"
+                      size="md"
                       className="text-muted-foreground hover:text-foreground transition-all duration-300 hover:scale-105"
                     >
                       <Link href="/admin" className="flex items-center gap-2">
@@ -268,7 +268,7 @@ export function Navbar() {
                   <Button
                     onClick={() => signOut({ callbackUrl: "/" })}
                     variant="ghost"
-                    size="sm"
+                    size="md"
                     className="text-muted-foreground hover:text-foreground transition-all duration-300 hover:scale-105"
                   >
                     Sign Out
@@ -279,15 +279,15 @@ export function Navbar() {
                   <Button
                     asChild
                     variant="ghost"
-                    size="sm"
+                    size="md"
                     className="text-muted-foreground hover:text-foreground transition-all duration-300 hover:scale-105"
                   >
                     <Link href="/auth/signin">Sign In</Link>
                   </Button>
                   <Button
                     asChild
-                    size="sm"
-                    className="bg-brand-orange hover:bg-brand-orange-dark text-white transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                    size="md"
+                    className=" text-white transition-all duration-300 hover:scale-105 hover:shadow-lg"
                   >
                     <Link href="/auth/signup">Get Started</Link>
                   </Button>
@@ -421,7 +421,7 @@ export function Navbar() {
                   <Button
                     asChild
                     variant="ghost"
-                    size="sm"
+                    size="md"
                     className="w-full justify-start"
                   >
                     <Link href="/dashboard" className="flex items-center gap-2">
@@ -434,7 +434,7 @@ export function Navbar() {
                     <Button
                       asChild
                       variant="ghost"
-                      size="sm"
+                      size="md"
                       className="w-full justify-start"
                     >
                       <Link href="/admin" className="flex items-center gap-2">
@@ -446,7 +446,7 @@ export function Navbar() {
                   <Button
                     onClick={() => signOut({ callbackUrl: "/" })}
                     variant="ghost"
-                    size="sm"
+                    size="md"
                     className="w-full justify-start"
                   >
                     Sign Out
@@ -457,14 +457,14 @@ export function Navbar() {
                   <Button
                     asChild
                     variant="ghost"
-                    size="sm"
+                    size="md"
                     className="w-full justify-start"
                   >
                     <Link href="/auth/signin">Sign In</Link>
                   </Button>
                   <Button
                     asChild
-                    size="sm"
+                    size="md"
                     className="w-full bg-brand-orange hover:bg-brand-orange-dark text-white"
                   >
                     <Link href="/auth/signup">Get Started</Link>
