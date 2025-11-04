@@ -181,7 +181,7 @@ export function Navbar() {
                         href="/services/warranty-device-check"
                         className="flex items-center px-3 py-2.5 text-sm rounded-lg cursor-pointer outline-none hover:bg-accent focus:bg-accent transition-colors duration-200"
                       >
-                        <Shield className="h-4 w-4 mr-2 text-blue-600" />
+                        <Shield className=" fill mr-2 text-blue-600" />
                         Warranty & Device Check
                       </Link>
                     </DropdownMenu.Item>
