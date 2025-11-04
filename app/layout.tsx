@@ -1,6 +1,6 @@
 import type React from "react";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import Providers from "@/components/providers";
@@ -8,10 +8,12 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { ConditionalNavbar } from "@/components/conditional-navbar";
 import { ConditionalFooter } from "@/components/conditional-footer";
+import { Plus_Jakarta_Sans } from "next/font/google";
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
-
+const plusJakartaSans = Plus_Jakarta_Sans({
+  weight: "400",
+  subsets: ["latin"],
+});
 export const metadata: Metadata = {
   title: "Servixing - Professional Device Repair Management",
   description:
@@ -56,7 +58,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body className={`font-sans antialiased`}>
+      <body className={plusJakartaSans.className}>
         <Providers session={session}>
           <ConditionalNavbar />
 
