@@ -52,8 +52,8 @@ export default function WarrantyDeviceCheckPage() {
 
     setLoading(true);
     try {
-      // Get payment details
-      const paymentRes = await fetch(`/api/payments/${paymentId}`);
+      // Get payment details (public endpoint)
+      const paymentRes = await fetch(`/api/public/payments/${paymentId}`);
 
       if (!paymentRes.ok) {
         throw new Error("Failed to fetch payment details");
@@ -65,7 +65,7 @@ export default function WarrantyDeviceCheckPage() {
       // Check if payment is already verified and paid
       if (paymentData.status !== "PAID") {
         // Verify payment
-        const verifyRes = await fetch("/api/payments/verify", {
+        const verifyRes = await fetch("/api/public/payments/verify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ reference: paymentId }),
@@ -93,7 +93,7 @@ export default function WarrantyDeviceCheckPage() {
       }
 
       // Perform the check
-      const checkRes = await fetch("/api/services/warranty-check", {
+      const checkRes = await fetch("/api/public/warranty-check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ brand, serialNumber, imei }),
@@ -131,7 +131,7 @@ export default function WarrantyDeviceCheckPage() {
     setError("");
 
     try {
-      const res = await fetch("/api/payments/initialize", {
+      const res = await fetch("/api/public/payments/initialize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
