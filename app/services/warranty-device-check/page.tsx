@@ -26,7 +26,7 @@ interface WarrantyResult {
 }
 
 export default function WarrantyDeviceCheckPage() {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
   const paymentId = searchParams.get("payment");
@@ -35,16 +35,11 @@ export default function WarrantyDeviceCheckPage() {
     brand: "",
     serialNumber: "",
     imei: "",
+    email: "",
   });
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<WarrantyResult | null>(null);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/auth/signin");
-    }
-  }, [status, router]);
 
   useEffect(() => {
     if (paymentId) {
@@ -125,8 +120,10 @@ export default function WarrantyDeviceCheckPage() {
       return;
     }
 
-    if (!session?.user?.email) {
-      setError("Unable to get user email. Please try logging in again.");
+    // Use session email if available, otherwise require an email in the form
+    const email = session?.user?.email || formData.email;
+    if (!email) {
+      setError("Please provide an email for payment receipt.");
       return;
     }
 
@@ -139,7 +136,7 @@ export default function WarrantyDeviceCheckPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: 100, // ₦100
-          email: session.user.email,
+          email,
           metadata: {
             service: "warranty-check",
             ...formData,
@@ -169,13 +166,7 @@ export default function WarrantyDeviceCheckPage() {
     }
   };
 
-  if (status === "loading") {
-    return <LoadingSpinner />;
-  }
-
-  if (!session) {
-    return null;
-  }
+  // Public page: allow usage without login
 
   if (result) {
     return (
@@ -410,6 +401,29 @@ export default function WarrantyDeviceCheckPage() {
                 <option value="dell">Dell</option>
               </select>
             </div>
+
+            {/* Email (shown if not logged in) */}
+            {!session?.user?.email && (
+              <div className="space-y-2">
+                <label htmlFor="email" className="text-sm font-medium">
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
+                  placeholder="you@example.com"
+                  className="w-full"
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  We'll send your receipt and results to this address.
+                </p>
+              </div>
+            )}
 
             {/* Serial Number */}
             <div className="space-y-2">

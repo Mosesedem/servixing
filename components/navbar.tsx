@@ -6,23 +6,53 @@ import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import {
-  LayoutDashboard,
-  Settings,
-  Menu,
-  X,
   Search,
   ShoppingBag,
   Wrench,
   BookOpen,
   HelpCircle,
   ChevronDown,
+  Shield,
+  Menu,
+  X,
+  LayoutDashboard,
+  Settings,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 
 export function Navbar() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  // Handle scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [mobileMenuOpen]);
 
   const isActive = (path: string) => {
     if (path === "/") {
@@ -32,287 +62,419 @@ export function Navbar() {
   };
 
   return (
-    <nav className="border-b border-border bg-background/95 backdrop-blur-2xl p-2.5 supports-backdrop-filter:bg-background/60 sticky top-0 z-50 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 shrink-0">
-            <Image
-              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Profile%20Pic-CGHiNUVT0jvOJgTXBzeDVNkuVnryYp.png"
-              alt="Servixing Logo"
-              width={32}
-              height={32}
-              className="h-8 w-8"
-            />
-            <span className="text-xl font-bold text-foreground hidden sm:inline">
-              Servixing
-            </span>
-          </Link>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-2">
-            <Button
-              asChild
-              variant="ghost"
-              size="lg"
-              className={`px-3 ${
-                isActive("/parts")
-                  ? "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
-                  : "text-muted-foreground"
-              }`}
+    <>
+      <nav
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          isScrolled
+            ? "bg-background/80 backdrop-blur-md border-b border-border shadow-sm"
+            : "bg-background/50 backdrop-blur-sm border-b border-transparent"
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <Link
+              href="/"
+              className="flex items-center gap-2 shrink-0 group"
+              aria-label="Servixing Home"
             >
-              <Link href="/parts" className="flex items-center gap-2">
+              <Image
+                src="/images/clear-logo.png"
+                alt="Servixing"
+                width={32}
+                height={32}
+                className="h-8 w-8 transform transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
+                priority
+              />
+              <span className="text-xl font-bold text-foreground hidden sm:inline transition-colors duration-300 group-hover:text-brand-orange">
+                Servixing
+              </span>
+            </Link>
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center gap-1">
+              {/* Find Parts */}
+              <Link
+                href="/parts"
+                className={`nav-link px-3 py-2 text-sm font-medium rounded-lg ${
+                  isActive("/parts") ? "active" : "text-muted-foreground"
+                }`}
+              >
                 <Search className="h-4 w-4" />
                 <span>Find Parts</span>
               </Link>
-            </Button>
-            <Button
-              asChild
-              variant="ghost"
-              size="lg"
-              className={`px-3 ${
-                isActive("/shop")
-                  ? "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
-                  : "text-muted-foreground"
-              }`}
-            >
-              <Link href="/shop" className="flex items-center gap-2">
+
+              {/* Shop */}
+              <Link
+                href="/shop"
+                className={`nav-link px-3 py-2 text-sm font-medium rounded-lg ${
+                  isActive("/shop") ? "active" : "text-muted-foreground"
+                }`}
+              >
                 <ShoppingBag className="h-4 w-4" />
                 <span>Shop</span>
               </Link>
-            </Button>
-            <Button
-              asChild
-              variant="ghost"
-              size="lg"
-              className={`px-3 ${
-                isActive("/services")
-                  ? "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
-                  : "text-muted-foreground"
-              }`}
-            >
-              <Link href="/services" className="flex items-center gap-2">
-                <Wrench className="h-4 w-4" />
-                <span>Services</span>
-              </Link>
-            </Button>
-            <Button
-              asChild
-              variant="ghost"
-              size="lg"
-              className={`px-3 ${
-                isActive("/help")
-                  ? "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
-                  : "text-muted-foreground"
-              }`}
-            >
-              <Link href="/help" className="flex items-center gap-2">
-                <BookOpen className="h-4 w-4" />
-                <span>Help</span>
-              </Link>
-            </Button>
-          </div>
 
-          {/* Desktop Auth */}
-          <div className="hidden md:flex items-center gap-3">
-            {session ? (
-              <>
-                <Link href="/dashboard">
-                  <Button variant="ghost" size="lg" className="gap-2">
-                    <LayoutDashboard className="h-4 w-4" />
-                    Dashboard
-                  </Button>
-                </Link>
-                {((session.user as any).role === "ADMIN" ||
-                  (session.user as any).role === "SUPER_ADMIN") && (
-                  <Link href="/admin">
-                    <Button variant="ghost" size="lg" className="gap-2">
-                      <Settings className="h-4 w-4" />
-                      Admin
-                    </Button>
-                  </Link>
-                )}
-                <Button onClick={() => signOut()} variant="ghost" size="lg">
-                  Sign Out
-                </Button>
-              </>
-            ) : (
-              <>
-                <Link href="/auth/signin">
-                  <Button variant="ghost" size="lg">
-                    Sign In
-                  </Button>
-                </Link>
-                <Link href="/auth/signup">
-                  <Button size="lg">Get Started</Button>
-                </Link>
-              </>
-            )}
-          </div>
-
-          {/* Mobile menu button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent"
-          >
-            {mobileMenuOpen ? (
-              <X className="h-6 w-6" />
-            ) : (
-              <Menu className="h-6 w-6" />
-            )}
-          </button>
-        </div>
-
-        {/* Mobile Navigation */}
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t border-border py-4">
-            <div className="flex flex-col gap-3">
-              <Button
-                asChild
-                variant="ghost"
-                size="lg"
-                className={`w-full justify-start ${
-                  isActive("/parts")
-                    ? "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
-                    : "text-muted-foreground"
-                }`}
-              >
-                <Link href="/parts" onClick={() => setMobileMenuOpen(false)}>
-                  <span className="flex items-center gap-2">
-                    <Search className="h-4 w-4" />
-                    Find Parts
-                  </span>
-                </Link>
-              </Button>
-              <Button
-                asChild
-                variant="ghost"
-                size="lg"
-                className={`w-full justify-start ${
-                  isActive("/shop")
-                    ? "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
-                    : "text-muted-foreground"
-                }`}
-              >
-                <Link href="/shop" onClick={() => setMobileMenuOpen(false)}>
-                  <span className="flex items-center gap-2">
-                    <ShoppingBag className="h-4 w-4" />
-                    Shop
-                  </span>
-                </Link>
-              </Button>
-              <Button
-                asChild
-                variant="ghost"
-                size="lg"
-                className={`w-full justify-start ${
-                  isActive("/services")
-                    ? "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
-                    : "text-muted-foreground"
-                }`}
-              >
-                <Link href="/services" onClick={() => setMobileMenuOpen(false)}>
-                  <span className="flex items-center gap-2">
+              {/* Services dropdown */}
+              <DropdownMenu.Root>
+                <DropdownMenu.Trigger asChild>
+                  <button
+                    className={`nav-link px-3 py-2 text-sm font-medium rounded-lg ${
+                      isActive("/services") ? "active" : "text-muted-foreground"
+                    }`}
+                    aria-label="Services menu"
+                  >
                     <Wrench className="h-4 w-4" />
-                    Services
-                  </span>
-                </Link>
-              </Button>
-              <Button
-                asChild
-                variant="ghost"
-                size="lg"
-                className={`w-full justify-start ${
-                  isActive("/help")
-                    ? "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
-                    : "text-muted-foreground"
-                }`}
-              >
-                <Link href="/help" onClick={() => setMobileMenuOpen(false)}>
-                  <span className="flex items-center gap-2">
-                    <BookOpen className="h-4 w-4" />
-                    Help
-                  </span>
-                </Link>
-              </Button>
+                    <span>Services</span>
+                    <ChevronDown className="h-3 w-3 transition-transform duration-300 group-data-[state=open]:rotate-180" />
+                  </button>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Portal>
+                  <DropdownMenu.Content
+                    className="min-w-[220px] rounded-xl border border-border bg-popover/95 backdrop-blur-md p-2 text-popover-foreground shadow-lg animate-slide-down z-50"
+                    align="start"
+                    sideOffset={8}
+                  >
+                    <DropdownMenu.Item asChild>
+                      <Link
+                        href="/services"
+                        className="flex items-center px-3 py-2.5 text-sm rounded-lg cursor-pointer outline-none hover:bg-accent focus:bg-accent transition-colors duration-200"
+                      >
+                        All Services
+                      </Link>
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item asChild>
+                      <Link
+                        href="/parts"
+                        className="flex items-center px-3 py-2.5 text-sm rounded-lg cursor-pointer outline-none hover:bg-accent focus:bg-accent transition-colors duration-200"
+                      >
+                        Find Parts
+                      </Link>
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item asChild>
+                      <Link
+                        href="/shop"
+                        className="flex items-center px-3 py-2.5 text-sm rounded-lg cursor-pointer outline-none hover:bg-accent focus:bg-accent transition-colors duration-200"
+                      >
+                        Shop
+                      </Link>
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Separator className="h-px bg-border my-2" />
+                    <DropdownMenu.Item asChild>
+                      <Link
+                        href="/services/warranty-device-check"
+                        className="flex items-center px-3 py-2.5 text-sm rounded-lg cursor-pointer outline-none hover:bg-accent focus:bg-accent transition-colors duration-200"
+                      >
+                        <Shield className="h-4 w-4 mr-2" />
+                        Warranty & Device Check
+                      </Link>
+                    </DropdownMenu.Item>
+                  </DropdownMenu.Content>
+                </DropdownMenu.Portal>
+              </DropdownMenu.Root>
 
-              <div className="border-t border-border my-2"></div>
+              {/* Help dropdown */}
+              <DropdownMenu.Root>
+                <DropdownMenu.Trigger asChild>
+                  <button
+                    className={`nav-link px-3 py-2 text-sm font-medium rounded-lg ${
+                      isActive("/help") ||
+                      isActive("/knowledge-base") ||
+                      isActive("/support")
+                        ? "active"
+                        : "text-muted-foreground"
+                    }`}
+                    aria-label="Help menu"
+                  >
+                    <HelpCircle className="h-4 w-4" />
+                    <span>Help</span>
+                    <ChevronDown className="h-3 w-3 transition-transform duration-300 group-data-[state=open]:rotate-180" />
+                  </button>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Portal>
+                  <DropdownMenu.Content
+                    className="min-w-[220px] rounded-xl border border-border bg-popover/95 backdrop-blur-md p-2 text-popover-foreground shadow-lg animate-slide-down z-50"
+                    align="start"
+                    sideOffset={8}
+                  >
+                    <DropdownMenu.Item asChild>
+                      <Link
+                        href="/help"
+                        className="flex items-center px-3 py-2.5 text-sm rounded-lg cursor-pointer outline-none hover:bg-accent focus:bg-accent transition-colors duration-200"
+                      >
+                        Help Center
+                      </Link>
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item asChild>
+                      <Link
+                        href="/knowledge-base"
+                        className="flex items-center px-3 py-2.5 text-sm rounded-lg cursor-pointer outline-none hover:bg-accent focus:bg-accent transition-colors duration-200"
+                      >
+                        <BookOpen className="h-4 w-4 mr-2" />
+                        Knowledge Base
+                      </Link>
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Separator className="h-px bg-border my-2" />
+                    <DropdownMenu.Item asChild>
+                      <Link
+                        href="/support/create-ticket"
+                        className="flex items-center px-3 py-2.5 text-sm rounded-lg cursor-pointer outline-none hover:bg-accent focus:bg-accent transition-colors duration-200"
+                      >
+                        Create Ticket
+                      </Link>
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item asChild>
+                      <Link
+                        href="/support"
+                        className="flex items-center px-3 py-2.5 text-sm rounded-lg cursor-pointer outline-none hover:bg-accent focus:bg-accent transition-colors duration-200"
+                      >
+                        Support
+                      </Link>
+                    </DropdownMenu.Item>
+                  </DropdownMenu.Content>
+                </DropdownMenu.Portal>
+              </DropdownMenu.Root>
+            </div>
 
+            {/* Desktop Auth */}
+            <div className="hidden md:flex items-center gap-2">
               {session ? (
                 <>
                   <Button
                     asChild
                     variant="ghost"
-                    size="lg"
-                    className="w-full justify-start text-muted-foreground"
+                    size="sm"
+                    className="text-muted-foreground hover:text-foreground transition-all duration-300 hover:scale-105"
                   >
-                    <Link
-                      href="/dashboard"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <span className="flex items-center gap-2">
-                        <LayoutDashboard className="h-4 w-4" />
-                        Dashboard
-                      </span>
+                    <Link href="/dashboard" className="flex items-center gap-2">
+                      <LayoutDashboard className="h-4 w-4" />
+                      <span>Dashboard</span>
                     </Link>
                   </Button>
-                  {((session.user as any).role === "ADMIN" ||
-                    (session.user as any).role === "SUPER_ADMIN") && (
+                  {((session.user as any)?.role === "ADMIN" ||
+                    (session.user as any)?.role === "SUPER_ADMIN") && (
                     <Button
                       asChild
                       variant="ghost"
-                      size="lg"
-                      className="w-full justify-start text-muted-foreground"
+                      size="sm"
+                      className="text-muted-foreground hover:text-foreground transition-all duration-300 hover:scale-105"
                     >
-                      <Link
-                        href="/admin"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <span className="flex items-center gap-2">
-                          <Settings className="h-4 w-4" />
-                          Admin
-                        </span>
+                      <Link href="/admin" className="flex items-center gap-2">
+                        <Settings className="h-4 w-4" />
+                        <span>Admin</span>
                       </Link>
                     </Button>
                   )}
-                  <button
-                    onClick={() => {
-                      signOut();
-                      setMobileMenuOpen(false);
-                    }}
-                    className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors text-left"
+                  <Button
+                    onClick={() => signOut({ callbackUrl: "/" })}
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-foreground transition-all duration-300 hover:scale-105"
                   >
                     Sign Out
-                  </button>
+                  </Button>
                 </>
               ) : (
                 <>
-                  <Link
-                    href="/auth/signin"
-                    onClick={() => setMobileMenuOpen(false)}
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-foreground transition-all duration-300 hover:scale-105"
                   >
+                    <Link href="/auth/signin">Sign In</Link>
+                  </Button>
+                  <Button
+                    asChild
+                    size="sm"
+                    className="bg-brand-orange hover:bg-brand-orange-dark text-white transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                  >
+                    <Link href="/auth/signup">Get Started</Link>
+                  </Button>
+                </>
+              )}
+            </div>
+
+            {/* Mobile menu button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-300"
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileMenuOpen}
+            >
+              {mobileMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Mobile Navigation Overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Mobile Navigation Menu */}
+      <div
+        className={`fixed top-16 right-0 bottom-0 w-80 max-w-[85vw] bg-background border-l border-border shadow-2xl z-40 md:hidden transform transition-transform duration-300 ease-out ${
+          mobileMenuOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        <div className="flex flex-col h-full overflow-y-auto p-4">
+          {/* Main Navigation */}
+          <div className="space-y-1 pb-4">
+            <Link
+              href="/parts"
+              className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-all duration-300 ${
+                isActive("/parts")
+                  ? "bg-brand-orange-light text-brand-orange"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+              }`}
+            >
+              <Search className="h-5 w-5" />
+              <span>Find Parts</span>
+            </Link>
+            <Link
+              href="/shop"
+              className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-all duration-300 ${
+                isActive("/shop")
+                  ? "bg-brand-orange-light text-brand-orange"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+              }`}
+            >
+              <ShoppingBag className="h-5 w-5" />
+              <span>Shop</span>
+            </Link>
+          </div>
+
+          {/* Services Section */}
+          <div className="border-t border-border pt-4 pb-4">
+            <div className="px-4 pb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Services
+            </div>
+            <div className="space-y-1">
+              <Link
+                href="/services"
+                className="flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all duration-300"
+              >
+                <Wrench className="h-5 w-5" />
+                <span>All Services</span>
+              </Link>
+              <Link
+                href="/services/warranty-device-check"
+                className="flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all duration-300"
+              >
+                <Shield className="h-5 w-5" />
+                <span>Warranty & Device Check</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Help Section */}
+          <div className="border-t border-border pt-4 pb-4">
+            <div className="px-4 pb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Help & Support
+            </div>
+            <div className="space-y-1">
+              <Link
+                href="/help"
+                className="flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all duration-300"
+              >
+                <HelpCircle className="h-5 w-5" />
+                <span>Help Center</span>
+              </Link>
+              <Link
+                href="/knowledge-base"
+                className="flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all duration-300"
+              >
+                <BookOpen className="h-5 w-5" />
+                <span>Knowledge Base</span>
+              </Link>
+              <Link
+                href="/support/create-ticket"
+                className="flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all duration-300"
+              >
+                <HelpCircle className="h-5 w-5" />
+                <span>Create Ticket</span>
+              </Link>
+              <Link
+                href="/support"
+                className="flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all duration-300"
+              >
+                <HelpCircle className="h-5 w-5" />
+                <span>Support</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Account Section */}
+          <div className="border-t border-border pt-4 mt-auto">
+            <div className="space-y-2">
+              {session ? (
+                <>
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start"
+                  >
+                    <Link href="/dashboard" className="flex items-center gap-2">
+                      <LayoutDashboard className="h-4 w-4" />
+                      <span>Dashboard</span>
+                    </Link>
+                  </Button>
+                  {((session.user as any)?.role === "ADMIN" ||
+                    (session.user as any)?.role === "SUPER_ADMIN") && (
                     <Button
+                      asChild
                       variant="ghost"
-                      size="lg"
+                      size="sm"
                       className="w-full justify-start"
                     >
-                      Sign In
+                      <Link href="/admin" className="flex items-center gap-2">
+                        <Settings className="h-4 w-4" />
+                        <span>Admin</span>
+                      </Link>
                     </Button>
-                  </Link>
-                  <Link
-                    href="/auth/signup"
-                    onClick={() => setMobileMenuOpen(false)}
+                  )}
+                  <Button
+                    onClick={() => signOut({ callbackUrl: "/" })}
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start"
                   >
-                    <Button size="lg" className="w-full">
-                      Get Started
-                    </Button>
-                  </Link>
+                    Sign Out
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start"
+                  >
+                    <Link href="/auth/signin">Sign In</Link>
+                  </Button>
+                  <Button
+                    asChild
+                    size="sm"
+                    className="w-full bg-brand-orange hover:bg-brand-orange-dark text-white"
+                  >
+                    <Link href="/auth/signup">Get Started</Link>
+                  </Button>
                 </>
               )}
             </div>
           </div>
-        )}
+        </div>
       </div>
-    </nav>
+    </>
   );
 }

@@ -37,6 +37,14 @@ export default function PartsSearchPage() {
   const [page, setPage] = useState(1);
   const [perPage] = useState(24);
   const [total, setTotal] = useState(0);
+  const [sort, setSort] = useState<"best_match" | "price_asc" | "price_desc">(
+    "best_match"
+  );
+  const [condition, setCondition] = useState<
+    "any" | "new" | "used" | "refurbished" | "for_parts"
+  >("any");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
 
   const brands = [
     "Apple",
@@ -62,13 +70,17 @@ export default function PartsSearchPage() {
     setSearched(true);
     try {
       const effectivePage = pageOverride ?? page;
-      const response = await fetch(
-        `/api/parts/search?q=${encodeURIComponent(
-          query
-        )}&brand=${encodeURIComponent(
-          brand
-        )}&page=${effectivePage}&perPage=${perPage}`
-      );
+      const url = new URL("/api/parts/search", window.location.origin);
+      url.searchParams.set("q", query);
+      url.searchParams.set("brand", brand);
+      url.searchParams.set("page", String(effectivePage));
+      url.searchParams.set("perPage", String(perPage));
+      url.searchParams.set("sort", sort);
+      url.searchParams.set("condition", condition);
+      if (minPrice) url.searchParams.set("minPrice", minPrice);
+      if (maxPrice) url.searchParams.set("maxPrice", maxPrice);
+
+      const response = await fetch(url.toString());
 
       if (!response.ok) throw new Error("Search failed");
 
@@ -170,6 +182,93 @@ export default function PartsSearchPage() {
               >
                 {loading ? "Searching..." : "Search"}
               </Button>
+            </div>
+
+            {/* Filters Row */}
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">
+                  Sort
+                </label>
+                <select
+                  className="h-10 w-full px-3 rounded-md border border-input bg-background"
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value as any)}
+                >
+                  <option value="best_match">Best match</option>
+                  <option value="price_asc">Price: Low to High</option>
+                  <option value="price_desc">Price: High to Low</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">
+                  Condition
+                </label>
+                <select
+                  className="h-10 w-full px-3 rounded-md border border-input bg-background"
+                  value={condition}
+                  onChange={(e) => setCondition(e.target.value as any)}
+                >
+                  <option value="any">Any</option>
+                  <option value="new">New</option>
+                  <option value="used">Used</option>
+                  <option value="refurbished">Refurbished</option>
+                  <option value="for_parts">For parts or not working</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">
+                  Min Price ($)
+                </label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Min"
+                  value={minPrice}
+                  onChange={(e) => setMinPrice(e.target.value)}
+                  className="h-10"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">
+                  Max Price ($)
+                </label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Max"
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(e.target.value)}
+                  className="h-10"
+                />
+              </div>
+              <div className="col-span-2 flex items-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setPage(1);
+                    handleSearch(1);
+                  }}
+                  disabled={loading || !query.trim()}
+                  className="flex-1"
+                >
+                  Apply Filters
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setSort("best_match");
+                    setCondition("any");
+                    setMinPrice("");
+                    setMaxPrice("");
+                  }}
+                  disabled={loading}
+                >
+                  Clear
+                </Button>
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-2">

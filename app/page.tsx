@@ -212,12 +212,13 @@ export default function LandingPage() {
               <div className="relative bg-white dark:bg-white/5 backdrop-blur-sm rounded-3xl p-2 border border-gray-200 dark:border-white/10 shadow-sm">
                 <div className="aspect-4/3 bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-2xl overflow-hidden flex items-center justify-center">
                   {/* Placeholder for repair image */}
-                  <div className="text-center p-8">
-                    <Wrench className="w-24 h-24 text-orange-400 mx-auto mb-4" />
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">
-                      Professional technician repairing device
-                    </p>
-                  </div>
+                  <Image
+                    src="/images/1.jpg"
+                    alt="Fast Repairs"
+                    layout="fill"
+                    objectFit="cover"
+                    className="rounded-lg shadow-lg"
+                  />
                 </div>
               </div>
             </div>
@@ -313,12 +314,13 @@ export default function LandingPage() {
               <div className="relative bg-white dark:bg-white/5 backdrop-blur-sm rounded-3xl p-2 border border-gray-200 dark:border-white/10 shadow-sm">
                 <div className="aspect-4/3 bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-2xl overflow-hidden flex items-center justify-center">
                   {/* Placeholder for parts image */}
-                  <div className="text-center p-8">
-                    <Package className="w-24 h-24 text-blue-400 mx-auto mb-4" />
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">
-                      Premium quality replacement parts
-                    </p>
-                  </div>
+                  <Image
+                    src="/images/3.jpg"
+                    alt="Fast Repairs"
+                    layout="fill"
+                    objectFit="cover"
+                    className="rounded-lg shadow-lg"
+                  />
                 </div>
               </div>
             </div>
@@ -348,12 +350,13 @@ export default function LandingPage() {
               <div className="relative bg-white dark:bg-white/5 backdrop-blur-sm rounded-3xl p-2 border border-gray-200 dark:border-white/10 shadow-sm">
                 <div className="aspect-4/3 bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-2xl overflow-hidden flex items-center justify-center">
                   {/* Placeholder for technician image */}
-                  <div className="text-center p-8">
-                    <Award className="w-24 h-24 text-orange-400 mx-auto mb-4" />
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">
-                      Certified repair technicians
-                    </p>
-                  </div>
+                  <Image
+                    src="/images/4.jpg"
+                    alt="Fast Repairs"
+                    layout="fill"
+                    objectFit="cover"
+                    className="rounded-lg shadow-lg"
+                  />
                 </div>
               </div>
             </div>

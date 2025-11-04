@@ -207,7 +207,7 @@ export default function ServicesPage() {
                         </div>
                       </div>
                     </div>
-                    <Link href="/dashboard/work-orders/create">
+                    <Link href="/services/book">
                       <Button size="sm" variant="outline">
                         Book Now
                       </Button>
@@ -262,7 +262,7 @@ export default function ServicesPage() {
                   </span>
                 </div>
 
-                <Link href={service.link || "/dashboard/work-orders/create"}>
+                <Link href={service.link || "/services/book"}>
                   <Button className="w-full bg-orange-600 hover:bg-orange-700">
                     {service.link ? "Check Device" : "Request Service"}
                   </Button>
@@ -327,7 +327,7 @@ export default function ServicesPage() {
             We stand behind our work. All repairs come with a 90-day warranty
             covering parts and labor. Your satisfaction is guaranteed.
           </p>
-          <Link href="/auth/signup">
+          <Link href="/services/book">
             <Button
               size="lg"
               className="bg-white text-orange-600 hover:bg-gray-100 h-12 px-8 text-base font-semibold"

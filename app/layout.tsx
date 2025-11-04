@@ -25,6 +25,11 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Servixing" }],
   creator: "Servixing",
+  icons: [
+    { url: "/images/clear-logo.png", type: "image/x-icon" },
+    { url: "/icons/icon-192x192.png", type: "image/png", sizes: "192x192" },
+    { url: "/icons/icon-512x512.png", type: "image/png", sizes: "512x512" },
+  ],
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -33,7 +38,7 @@ export const metadata: Metadata = {
     description: "Track your device repairs from drop-off to pickup.",
     images: [
       {
-        url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Profile%20Pic-CGHiNUVT0jvOJgTXBzeDVNkuVnryYp.png",
+        url: "/images/clear-logo.png",
         width: 1200,
         height: 630,
         alt: "Servixing",
