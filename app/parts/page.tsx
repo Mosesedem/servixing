@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Select } from "@/components/ui/select";
 import {
   Search,
   Package,
@@ -12,6 +11,8 @@ import {
   Shield,
   ExternalLink,
 } from "lucide-react";
+import * as Dialog from "@radix-ui/react-dialog";
+import { Drawer } from "vaul";
 
 interface Part {
   id: string;
@@ -29,6 +30,13 @@ export default function PartsSearchPage() {
   const [parts, setParts] = useState<Part[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [featured, setFeatured] = useState<Part[]>([]);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [selected, setSelected] = useState<Part | null>(null);
+  const [isDesktop, setIsDesktop] = useState(false);
+  const [page, setPage] = useState(1);
+  const [perPage] = useState(24);
+  const [total, setTotal] = useState(0);
 
   const brands = [
     "Apple",
@@ -47,28 +55,70 @@ export default function PartsSearchPage() {
     "LG",
   ];
 
-  const handleSearch = async () => {
+  const handleSearch = async (pageOverride?: number) => {
     if (!query.trim()) return;
 
     setLoading(true);
     setSearched(true);
     try {
+      const effectivePage = pageOverride ?? page;
       const response = await fetch(
         `/api/parts/search?q=${encodeURIComponent(
           query
-        )}&brand=${encodeURIComponent(brand)}`
+        )}&brand=${encodeURIComponent(
+          brand
+        )}&page=${effectivePage}&perPage=${perPage}`
       );
 
       if (!response.ok) throw new Error("Search failed");
 
       const data = await response.json();
       setParts(data.parts || []);
+      setTotal(Number(data.total || 0));
+      // ensure page reflects backend echo
+      if (typeof data.page === "number") setPage(data.page);
     } catch (error) {
       console.error("Parts search error:", error);
       setParts([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Load featured items once
+  useEffect(() => {
+    const loadFeatured = async () => {
+      try {
+        const res = await fetch("/api/parts/featured", { cache: "no-store" });
+        const data = await res.json();
+        setFeatured(data.parts || []);
+      } catch (e) {
+        console.error("Featured parts error:", e);
+      }
+    };
+    loadFeatured();
+  }, []);
+
+  // Responsive: use drawer on mobile, sheet (dialog) on desktop
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 1024px)");
+    const set = () => setIsDesktop(mql.matches);
+    set();
+    mql.addEventListener("change", set);
+    return () => mql.removeEventListener("change", set);
+  }, []);
+
+  const openPreview = (part: Part) => {
+    setSelected(part);
+    setPreviewOpen(true);
+  };
+
+  const fallbackSrc = "/images/accessories.png";
+  const onImgError = (e: any) => {
+    const t = e.currentTarget as HTMLImageElement;
+    if (!t || t.src.includes("accessories.png")) return;
+    t.src = fallbackSrc;
   };
 
   return (
@@ -111,7 +161,10 @@ export default function PartsSearchPage() {
               </select>
 
               <Button
-                onClick={handleSearch}
+                onClick={() => {
+                  setPage(1);
+                  handleSearch(1);
+                }}
                 disabled={loading || !query.trim()}
                 className="bg-orange-600 hover:bg-orange-700"
               >
@@ -151,6 +204,73 @@ export default function PartsSearchPage() {
           </div>
         </Card>
 
+        {/* Featured Section */}
+        {featured.length > 0 && (
+          <div className="mb-10">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-semibold">Featured</h2>
+              <p className="text-sm text-muted-foreground">
+                Curated parts from our catalog
+              </p>
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+              {featured.map((part) => (
+                <Card
+                  key={part.id}
+                  className="overflow-hidden hover:shadow-lg transition-shadow"
+                >
+                  <div className="aspect-square bg-muted relative">
+                    <img
+                      src={part.imageUrl || fallbackSrc}
+                      alt={part.title}
+                      className="object-cover w-full h-full"
+                      onError={onImgError}
+                    />
+                    <span className="absolute left-2 top-2 text-xs bg-orange-600 text-white px-2 py-0.5 rounded">
+                      Featured
+                    </span>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    <h3 className="font-semibold line-clamp-2 min-h-12">
+                      {part.title}
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 text-orange-600 font-bold text-xl">
+                        <DollarSign className="h-5 w-5" />
+                        {part.price.toFixed(2)}
+                      </div>
+                      <span className="text-sm px-2 py-1 rounded-full bg-muted">
+                        {part.condition}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Shield className="h-4 w-4" /> Seller: {part.seller}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        onClick={() => openPreview(part)}
+                        variant="secondary"
+                      >
+                        Preview
+                      </Button>
+                      <a
+                        href={part.ebayUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block"
+                      >
+                        <Button className="w-full bg-orange-600 hover:bg-orange-700">
+                          Buy on eBay <ExternalLink className="ml-2 h-4 w-4" />
+                        </Button>
+                      </a>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Results */}
         {loading && (
           <div className="text-center py-12">
@@ -175,11 +295,43 @@ export default function PartsSearchPage() {
           <>
             <div className="flex items-center justify-between mb-6">
               <p className="text-muted-foreground">
-                Found {parts.length} {parts.length === 1 ? "result" : "results"}
+                Showing {parts.length} of {total} • Page {page} of{" "}
+                {Math.max(1, Math.ceil(total / perPage))}
               </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    const newPage = Math.max(1, page - 1);
+                    setPage(newPage);
+                    handleSearch(newPage);
+                    if (typeof window !== "undefined")
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  disabled={page <= 1 || loading}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    const pageCount = Math.max(1, Math.ceil(total / perPage));
+                    const newPage = Math.min(pageCount, page + 1);
+                    setPage(newPage);
+                    handleSearch(newPage);
+                    if (typeof window !== "undefined")
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  disabled={
+                    page >= Math.max(1, Math.ceil(total / perPage)) || loading
+                  }
+                >
+                  Next
+                </Button>
+              </div>
             </div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
               {parts.map((part) => (
                 <Card
                   key={part.id}
@@ -187,9 +339,10 @@ export default function PartsSearchPage() {
                 >
                   <div className="aspect-square bg-muted relative">
                     <img
-                      src={part.imageUrl}
+                      src={part.imageUrl || fallbackSrc}
                       alt={part.title}
                       className="object-cover w-full h-full"
+                      onError={onImgError}
                     />
                   </div>
                   <div className="p-4 space-y-3">
@@ -212,17 +365,25 @@ export default function PartsSearchPage() {
                       Seller: {part.seller}
                     </div>
 
-                    <a
-                      href={part.ebayUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block"
-                    >
-                      <Button className="w-full bg-orange-600 hover:bg-orange-700">
-                        View on eBay
-                        <ExternalLink className="ml-2 h-4 w-4" />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        onClick={() => openPreview(part)}
+                        variant="secondary"
+                      >
+                        Preview
                       </Button>
-                    </a>
+                      <a
+                        href={part.ebayUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block"
+                      >
+                        <Button className="w-full bg-orange-600 hover:bg-orange-700">
+                          Buy on eBay
+                          <ExternalLink className="ml-2 h-4 w-4" />
+                        </Button>
+                      </a>
+                    </div>
                   </div>
                 </Card>
               ))}
@@ -265,6 +426,118 @@ export default function PartsSearchPage() {
           </Card>
         </div>
       </div>
+
+      {/* Preview Sheet/Drawer */}
+      {selected &&
+        (isDesktop ? (
+          <Dialog.Root open={previewOpen} onOpenChange={setPreviewOpen}>
+            <Dialog.Portal>
+              <Dialog.Overlay className="fixed inset-0 bg-black/50" />
+              <Dialog.Content className="fixed right-0 top-0 h-full w-full max-w-md bg-background shadow-xl focus:outline-none">
+                <div className="p-4 border-b flex items-center justify-between">
+                  <Dialog.Title className="text-lg font-semibold line-clamp-2 pr-8">
+                    {selected.title}
+                  </Dialog.Title>
+                  <Dialog.Close asChild>
+                    <button className="text-sm text-muted-foreground hover:text-foreground">
+                      Close
+                    </button>
+                  </Dialog.Close>
+                </div>
+                <div className="p-4 space-y-4 overflow-y-auto h-[calc(100%-56px)]">
+                  <div className="aspect-square bg-muted">
+                    <img
+                      src={selected.imageUrl || fallbackSrc}
+                      alt={selected.title}
+                      className="w-full h-full object-cover"
+                      onError={onImgError}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 text-orange-600 font-bold text-2xl">
+                      <DollarSign className="h-6 w-6" />{" "}
+                      {selected.price.toFixed(2)}
+                    </div>
+                    <span className="text-sm px-2 py-1 rounded-full bg-muted">
+                      {selected.condition}
+                    </span>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Seller: {selected.seller}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 pt-2">
+                    <a
+                      href={selected.ebayUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button className="w-full bg-orange-600 hover:bg-orange-700">
+                        View details <ExternalLink className="ml-2 h-4 w-4" />
+                      </Button>
+                    </a>
+                    <Dialog.Close asChild>
+                      <Button variant="secondary" className="w-full">
+                        Close
+                      </Button>
+                    </Dialog.Close>
+                  </div>
+                </div>
+              </Dialog.Content>
+            </Dialog.Portal>
+          </Dialog.Root>
+        ) : (
+          <Drawer.Root open={previewOpen} onOpenChange={setPreviewOpen}>
+            <Drawer.Portal>
+              <Drawer.Overlay className="fixed inset-0 bg-black/50" />
+              <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 mt-24 flex h-[85vh] flex-col rounded-t-[10px] bg-background">
+                <div className="mx-auto mt-4 h-2 w-12 rounded-full bg-muted" />
+                <div className="p-4 overflow-y-auto">
+                  <div className="mb-3 text-lg font-semibold line-clamp-2">
+                    {selected.title}
+                  </div>
+                  <div className="aspect-square bg-muted">
+                    <img
+                      src={selected.imageUrl || fallbackSrc}
+                      alt={selected.title}
+                      className="w-full h-full object-cover"
+                      onError={onImgError}
+                    />
+                  </div>
+                  <div className="mt-4 flex items-center gap-2">
+                    <div className="flex items-center gap-1 text-orange-600 font-bold text-2xl">
+                      <DollarSign className="h-6 w-6" />{" "}
+                      {selected.price.toFixed(2)}
+                    </div>
+                    <span className="text-sm px-2 py-1 rounded-full bg-muted">
+                      {selected.condition}
+                    </span>
+                  </div>
+                  <div className="mt-1 text-sm text-muted-foreground">
+                    Seller: {selected.seller}
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <a
+                      href={selected.ebayUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button className="w-full bg-orange-600 hover:bg-orange-700">
+                        View details <ExternalLink className="ml-2 h-4 w-4" />
+                      </Button>
+                    </a>
+                    <Button
+                      variant="secondary"
+                      className="w-full"
+                      onClick={() => setPreviewOpen(false)}
+                    >
+                      Close
+                    </Button>
+                  </div>
+                </div>
+              </Drawer.Content>
+            </Drawer.Portal>
+          </Drawer.Root>
+        ))}
     </div>
   );
 }

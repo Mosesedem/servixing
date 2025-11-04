@@ -536,3 +536,25 @@ model AuditLog {
   @@index([createdAt])
   @@map("audit_logs")
 }
+
+// Public marketplace featured items for parts search
+model FeaturedItem {
+  id String @id @default(cuid())
+
+  title     String
+  price     Decimal @db.Decimal(10, 2)
+  currency  String  @default("USD")
+  condition String
+  imageUrl  String
+  seller    String
+  ebayUrl   String
+  brand     String?
+  active    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active])
+  @@index([createdAt])
+  @@map("featured_items")
+}
