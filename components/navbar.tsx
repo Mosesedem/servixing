@@ -17,6 +17,14 @@ import {
   X,
   LayoutDashboard,
   Settings,
+  SearchCheckIcon,
+  SearchIcon,
+  Cog,
+  InfoIcon,
+  Ticket,
+  LifeBuoy,
+  HandHelping,
+  Headset,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
@@ -140,7 +148,7 @@ export function Navbar() {
                         href="/services"
                         className="flex items-center px-3 py-2.5 text-sm rounded-lg cursor-pointer outline-none hover:bg-accent focus:bg-accent transition-colors duration-200"
                       >
-                        All Services
+                        <Wrench className="mr-2 text-blue-600" /> All Services
                       </Link>
                     </DropdownMenu.Item>
                     <DropdownMenu.Item asChild>
@@ -148,7 +156,15 @@ export function Navbar() {
                         href="/parts"
                         className="flex items-center px-3 py-2.5 text-sm rounded-lg cursor-pointer outline-none hover:bg-accent focus:bg-accent transition-colors duration-200"
                       >
-                        Find Parts
+                        <SearchIcon className="mr-2 text-blue-600" /> Find Parts
+                      </Link>
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item asChild>
+                      <Link
+                        href="/services/book"
+                        className="flex items-center px-3 py-2.5 text-sm rounded-lg cursor-pointer outline-none hover:bg-accent focus:bg-accent transition-colors duration-200"
+                      >
+                        <Cog className="mr-2 text-blue-600" /> Book Repairs{" "}
                       </Link>
                     </DropdownMenu.Item>
                     <DropdownMenu.Item asChild>
@@ -156,7 +172,7 @@ export function Navbar() {
                         href="/shop"
                         className="flex items-center px-3 py-2.5 text-sm rounded-lg cursor-pointer outline-none hover:bg-accent focus:bg-accent transition-colors duration-200"
                       >
-                        Shop
+                        <ShoppingBag className="mr-2 text-blue-600" /> Shop
                       </Link>
                     </DropdownMenu.Item>
                     <DropdownMenu.Separator className="h-px bg-border my-2" />
@@ -165,7 +181,7 @@ export function Navbar() {
                         href="/services/warranty-device-check"
                         className="flex items-center px-3 py-2.5 text-sm rounded-lg cursor-pointer outline-none hover:bg-accent focus:bg-accent transition-colors duration-200"
                       >
-                        <Shield className="h-4 w-4 mr-2" />
+                        <Shield className="h-4 w-4 mr-2 text-blue-600" />
                         Warranty & Device Check
                       </Link>
                     </DropdownMenu.Item>
@@ -202,7 +218,7 @@ export function Navbar() {
                         href="/help"
                         className="flex items-center px-3 py-2.5 text-sm rounded-lg cursor-pointer outline-none hover:bg-accent focus:bg-accent transition-colors duration-200"
                       >
-                        Help Center
+                        <Headset className="mr-2 text-blue-600" /> Help Center
                       </Link>
                     </DropdownMenu.Item>
                     <DropdownMenu.Item asChild>
@@ -210,7 +226,7 @@ export function Navbar() {
                         href="/knowledge-base"
                         className="flex items-center px-3 py-2.5 text-sm rounded-lg cursor-pointer outline-none hover:bg-accent focus:bg-accent transition-colors duration-200"
                       >
-                        <BookOpen className="h-4 w-4 mr-2" />
+                        <BookOpen className=" mr-2 text-blue-600" />
                         Knowledge Base
                       </Link>
                     </DropdownMenu.Item>
@@ -220,7 +236,7 @@ export function Navbar() {
                         href="/support/create-ticket"
                         className="flex items-center px-3 py-2.5 text-sm rounded-lg cursor-pointer outline-none hover:bg-accent focus:bg-accent transition-colors duration-200"
                       >
-                        Create Ticket
+                        <Ticket className="mr-2 text-blue-600" /> Create Ticket
                       </Link>
                     </DropdownMenu.Item>
                     <DropdownMenu.Item asChild>
@@ -228,7 +244,7 @@ export function Navbar() {
                         href="/support"
                         className="flex items-center px-3 py-2.5 text-sm rounded-lg cursor-pointer outline-none hover:bg-accent focus:bg-accent transition-colors duration-200"
                       >
-                        Support
+                        <HandHelping className="mr-2 text-blue-600" /> Support
                       </Link>
                     </DropdownMenu.Item>
                   </DropdownMenu.Content>
