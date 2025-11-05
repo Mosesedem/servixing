@@ -12,6 +12,7 @@ import { logger } from "@/lib/logger";
 export class AuthService {
   /**
    * Register a new user
+   * Handles both new registrations and upgrades from public/guest users
    */
   async register(data: {
     name: string;
@@ -23,16 +24,85 @@ export class AuthService {
     // Check if user already exists
     const existingUser = await db.user.findUnique({
       where: { email: data.email },
+      select: {
+        id: true,
+        email: true,
+        password: true,
+        role: true,
+        deletedAt: true,
+        name: true,
+        phone: true,
+      },
     });
 
-    if (existingUser) {
-      throw new ConflictError("User with this email already exists");
+    // If user exists and has been soft-deleted, restore and update
+    if (existingUser && existingUser.deletedAt) {
+      const passwordHash = await hash(data.password, 12);
+
+      const restoredUser = await db.user.update({
+        where: { id: existingUser.id },
+        data: {
+          name: data.name,
+          password: passwordHash,
+          phone: data.phone || existingUser.phone,
+          address: data.address,
+          deletedAt: null,
+          emailVerified: new Date(),
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          createdAt: true,
+        },
+      });
+
+      logger.info(
+        `Restored and registered previously deleted user: ${restoredUser.email}`
+      );
+      return restoredUser;
     }
 
-    // Hash password
+    // If user exists without a password (public/guest user), upgrade their account
+    if (existingUser && !existingUser.password) {
+      const passwordHash = await hash(data.password, 12);
+
+      const upgradedUser = await db.user.update({
+        where: { id: existingUser.id },
+        data: {
+          name: data.name || existingUser.name,
+          password: passwordHash,
+          phone: data.phone || existingUser.phone,
+          address: data.address,
+          emailVerified: new Date(),
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          createdAt: true,
+        },
+      });
+
+      logger.info(
+        `Upgraded public/guest user to registered account: ${upgradedUser.email}`
+      );
+      return upgradedUser;
+    }
+
+    // If user exists with a password, they're already registered
+    if (existingUser && existingUser.password) {
+      throw new ConflictError(
+        "An account with this email already exists. Please sign in instead."
+      );
+    }
+
+    // Hash password for new user
     const passwordHash = await hash(data.password, 12);
 
-    // Create user
+    // Create new user
     const user = await db.user.create({
       data: {
         name: data.name,
@@ -41,6 +111,7 @@ export class AuthService {
         phone: data.phone,
         address: data.address,
         role: "CUSTOMER",
+        emailVerified: new Date(),
       },
       select: {
         id: true,
@@ -62,10 +133,24 @@ export class AuthService {
   async verifyCredentials(email: string, password: string) {
     const user = await db.user.findUnique({
       where: { email },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        password: true,
+        deletedAt: true,
+      },
     });
 
-    if (!user || !user.password) {
+    if (!user || user.deletedAt) {
       throw new AuthenticationError("Invalid email or password");
+    }
+
+    if (!user.password) {
+      throw new AuthenticationError(
+        "No password set for this account. Please use 'Forgot Password' to set up your account, or register if you haven't already."
+      );
     }
 
     const isValidPassword = await compare(password, user.password);
@@ -194,12 +279,19 @@ export class AuthService {
 
   /**
    * Generate a password reset token and return metadata for email delivery
+   * Also handles account claiming for public/guest users
    */
   async requestPasswordReset(email: string) {
     const normalizedEmail = email.toLowerCase().trim();
     const user = await db.user.findUnique({
       where: { email: normalizedEmail },
-      select: { id: true, email: true, name: true, deletedAt: true },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        deletedAt: true,
+        password: true,
+      },
     });
 
     if (!user || !user.email || user.deletedAt) {
@@ -230,13 +322,20 @@ export class AuthService {
       },
     });
 
-    logger.info(`Password reset PIN generated for user: ${user.email}`);
+    const isPublicUser = !user.password;
+
+    logger.info(
+      `Password reset PIN generated for user: ${user.email}${
+        isPublicUser ? " (public user - account claiming)" : ""
+      }`
+    );
 
     return {
       token: pin,
       expires,
       email: user.email,
       name: user.name,
+      isPublicUser, // Flag to indicate this is a public user claiming their account
     };
   }
 
@@ -328,6 +427,61 @@ export class AuthService {
       identifier: verificationRecord.identifier,
       expires: verificationRecord.expires,
       valid: true,
+    };
+  }
+
+  /**
+   * Check account status for an email address
+   * Returns information about whether the account exists and its registration status
+   */
+  async checkAccountStatus(email: string) {
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await db.user.findUnique({
+      where: { email: normalizedEmail },
+      select: {
+        id: true,
+        email: true,
+        password: true,
+        deletedAt: true,
+        role: true,
+        createdAt: true,
+        _count: {
+          select: {
+            workOrders: true,
+            supportTickets: true,
+            devices: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      return {
+        exists: false,
+        isRegistered: false,
+        isPublicUser: false,
+        isDeleted: false,
+        hasActivity: false,
+      };
+    }
+
+    const hasActivity =
+      user._count.workOrders > 0 ||
+      user._count.supportTickets > 0 ||
+      user._count.devices > 0;
+
+    return {
+      exists: true,
+      isRegistered: !!user.password,
+      isPublicUser: !user.password,
+      isDeleted: !!user.deletedAt,
+      hasActivity,
+      activityCount: {
+        workOrders: user._count.workOrders,
+        supportTickets: user._count.supportTickets,
+        devices: user._count.devices,
+      },
+      createdAt: user.createdAt,
     };
   }
 }

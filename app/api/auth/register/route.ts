@@ -25,5 +25,16 @@ export const POST = asyncHandler(async (req: Request) => {
   }
 
   const user = await authService.register(data);
-  return successResponse({ user });
+
+  // Check if this was an upgrade from a public user
+  const wasUpgraded =
+    !user.createdAt ||
+    new Date().getTime() - new Date(user.createdAt).getTime() > 60000; // Created more than 1 min ago
+
+  return successResponse({
+    user,
+    message: wasUpgraded
+      ? "Your account has been successfully created! Your previous repair requests and data have been linked to this account."
+      : "Account created successfully!",
+  });
 });

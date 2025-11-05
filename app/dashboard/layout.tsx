@@ -46,7 +46,7 @@ export default async function DashboardLayout({
     <div className="flex min-h-screen bg-background ">
       <DashboardSidebar />
       {/* Main Content - add padding for mobile menu button */}
-      <main className="flex-1 p-8 md:p-8 pt-20 md:pt-8">{children}</main>
+      <main className="flex-1">{children}</main>
     </div>
   );
 }
