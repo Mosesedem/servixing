@@ -10,6 +10,9 @@ import {
   DollarSign,
   Shield,
   ExternalLink,
+  Menu,
+  X,
+  Filter,
 } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Drawer } from "vaul";
@@ -45,7 +48,7 @@ export default function PartsSearchPage() {
   >("any");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
-
+  const [sortVisible, isSortVisible] = useState(false);
   const brands = [
     "Apple",
     "Samsung",
@@ -184,93 +187,110 @@ export default function PartsSearchPage() {
               </Button>
             </div>
 
-            {/* Filters Row */}
-            <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-              <div>
-                <label className="block text-xs text-muted-foreground mb-1">
-                  Sort
-                </label>
-                <select
-                  className="h-10 w-full px-3 rounded-md border border-input bg-background"
-                  value={sort}
-                  onChange={(e) => setSort(e.target.value as any)}
-                >
-                  <option value="best_match">Best match</option>
-                  <option value="price_asc">Price: Low to High</option>
-                  <option value="price_desc">Price: High to Low</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs text-muted-foreground mb-1">
-                  Condition
-                </label>
-                <select
-                  className="h-10 w-full px-3 rounded-md border border-input bg-background"
-                  value={condition}
-                  onChange={(e) => setCondition(e.target.value as any)}
-                >
-                  <option value="any">Any</option>
-                  <option value="new">New</option>
-                  <option value="used">Used</option>
-                  <option value="refurbished">Refurbished</option>
-                  <option value="for_parts">For parts or not working</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs text-muted-foreground mb-1">
-                  Min Price ($)
-                </label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="Min"
-                  value={minPrice}
-                  onChange={(e) => setMinPrice(e.target.value)}
-                  className="h-10"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-muted-foreground mb-1">
-                  Max Price ($)
-                </label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="Max"
-                  value={maxPrice}
-                  onChange={(e) => setMaxPrice(e.target.value)}
-                  className="h-10"
-                />
-              </div>
-              <div className="col-span-2 flex items-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setPage(1);
-                    handleSearch(1);
-                  }}
-                  disabled={loading || !query.trim()}
-                  className="flex-1"
-                >
-                  Apply Filters
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setSort("best_match");
-                    setCondition("any");
-                    setMinPrice("");
-                    setMaxPrice("");
-                  }}
-                  disabled={loading}
-                >
-                  Clear
-                </Button>
-              </div>
-            </div>
+            <button
+              onClick={() => isSortVisible(!sortVisible)}
+              className=" p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-300"
+              aria-label={sortVisible ? "Close menu" : "Open menu"}
+              aria-expanded={sortVisible}
+            >
+              {sortVisible ? (
+                <span className="relative flex">
+                  <X className="h-6 w-6" /> Close
+                </span>
+              ) : (
+                <span className="relative flex">
+                  <Filter className="h-6 w-6" /> Sort
+                </span>
+              )}
+            </button>
 
+            {sortVisible && (
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1">
+                    Sort
+                  </label>
+                  <select
+                    className="flex items-center justify-center h-10 w-full px-3 rounded-md border border-input bg-background"
+                    value={sort}
+                    onChange={(e) => setSort(e.target.value as any)}
+                  >
+                    <option value="best_match">Best match</option>
+                    <option value="price_asc">Price: Low to High</option>
+                    <option value="price_desc">Price: High to Low</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1">
+                    Condition
+                  </label>
+                  <select
+                    className="h-10 w-full px-3 rounded-md border border-input bg-background"
+                    value={condition}
+                    onChange={(e) => setCondition(e.target.value as any)}
+                  >
+                    <option value="any">Any</option>
+                    <option value="new">New</option>
+                    <option value="used">Used</option>
+                    <option value="refurbished">Refurbished</option>
+                    <option value="for_parts">For Scraps</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1">
+                    Min Price ($)
+                  </label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="1"
+                    placeholder="Min"
+                    value={minPrice}
+                    onChange={(e) => setMinPrice(e.target.value)}
+                    className="h-10"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1">
+                    Max Price ($)
+                  </label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="1"
+                    placeholder="Max"
+                    value={maxPrice}
+                    onChange={(e) => setMaxPrice(e.target.value)}
+                    className="h-10"
+                  />
+                </div>
+                <div className="col-span-2 flex items-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setPage(1);
+                      handleSearch(1);
+                    }}
+                    disabled={loading || !query.trim()}
+                    className="flex-1"
+                  >
+                    Apply Filters
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setSort("best_match");
+                      setCondition("any");
+                      setMinPrice("");
+                      setMaxPrice("");
+                    }}
+                    disabled={loading}
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </div>
+            )}
             <div className="flex flex-wrap gap-2">
               <span className="text-sm text-muted-foreground">
                 Popular searches:

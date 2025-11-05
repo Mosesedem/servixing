@@ -1,11 +1,5 @@
 import type React from "react";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
-
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Servixing - Professional Device Repair Management",
@@ -45,7 +39,7 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={`font-sans antialiased`}>
-        <div className="relative min-h-screen p-28 items-center justify-center overflow-hidden">
+        <div className="py-16 md:p-4 lg:p-16 p-4 relative min-h-screen items-center justify-center overflow-hidden">
           {children}
         </div>
       </body>

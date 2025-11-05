@@ -89,21 +89,21 @@ export default function LandingPage() {
 
         <div className="relative z-10 max-w-6xl mx-auto px-6 text-center pt-32 pb-20">
           <div className="animate-fade-in">
-            <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-full px-4 py-2 mb-8 backdrop-blur-sm">
+            {/* <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-full px-4 py-2 mb-8 backdrop-blur-sm">
               <Award className="w-4 h-4 text-orange-400" />
               <span className="text-sm text-orange-400 font-medium">
                 Trusted by 10,000+ customers
               </span>
-            </div>
-            <h1 className="text-6xl md:text-8xl lg:text-9xl font-bold mb-6 leading-tight">
+            </div> */}
+            <h1 className="text-6xl md:text-8xl lg:text-9xl font-bold mb-6 leading-tight text-primary">
               Fix it.
               <br />
-              <span className="text-orange-500">Perfectly.</span>
+              <span className="text-blue-600">Perfectly.</span>
             </h1>
-            <p className="text-xl md:text-2xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl md:text-2xl text-gray-600 mb-12 max-w-3xl mx-auto font-extralight leading-relaxed">
               Professional repairs that bring your devices back to life. Fast,
               reliable, and backed by our{" "}
-              <span className="text-orange-400 font-semibold">
+              <span className="text-blue-600 font-extrabold">
                 90-day guarantee
               </span>
               .
@@ -123,25 +123,18 @@ export default function LandingPage() {
             {/* Trust badges */}
             <div className="mt-16 flex flex-wrap justify-center gap-8 text-sm text-gray-600 dark:text-gray-400">
               <div className="flex items-center gap-2">
-                <Check className="w-5 h-5 text-orange-400" />
+                <Check className="w-5 h-5 text-blue-600" />
                 <span>90-Day Warranty</span>
               </div>
               <div className="flex items-center gap-2">
-                <Check className="w-5 h-5 text-orange-400" />
+                <Check className="w-5 h-5 text-blue-600" />
                 <span>Certified Technicians</span>
               </div>
               <div className="flex items-center gap-2">
-                <Check className="w-5 h-5 text-orange-400" />
+                <Check className="w-5 h-5 text-blue-600" />
                 <span>Same-Day Service</span>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-          <div className="w-6 h-10 border-2 border-orange-500/30 rounded-full flex justify-center pt-2">
-            <div className="w-1 h-2 bg-linear-to-b from-orange-500 to-blue-500 rounded-full animate-pulse" />
           </div>
         </div>
       </section>
@@ -175,8 +168,8 @@ export default function LandingPage() {
                   transitionDelay: `${i * 100}ms`,
                 }}
               >
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-500/15 mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <stat.icon className="w-8 h-8 text-orange-400" />
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-600 mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <stat.icon className="w-8 h-8 text-white" />
                 </div>
                 <div className="text-4xl md:text-5xl font-bold text-orange-500 mb-2">
                   {stat.value}
@@ -432,7 +425,7 @@ export default function LandingPage() {
               {
                 title: "Mobile Phones",
                 subtitle: "Iphones, Android Devices Repairs, servicings etc.",
-                color: "from-blue-600 to-blue-600",
+                color: "from-transparent to-transparent",
                 icon: Smartphone,
                 image: "📱",
                 imageUrl: "/images/iphone.png",
@@ -442,7 +435,7 @@ export default function LandingPage() {
                 title: "Laptops",
                 subtitle:
                   "Warranty coverage, Sales of OEM parts & Repairs of all brands",
-                color: "from-blue-600 to-blue-600",
+                color: "from-transparent to-transparent",
                 icon: Monitor,
                 image: "💻",
                 imageUrl: "/images/laptop.png",
@@ -451,7 +444,7 @@ export default function LandingPage() {
               {
                 title: "iPads & Tablets",
                 subtitle: "Sales, Repairs & Servicing",
-                color: "from-blue-600 to-blue-600",
+                color: "from-transparent to-transparent",
                 icon: Tablet,
                 image: "📱",
                 imageUrl: "/images/ipad.png",
@@ -460,7 +453,7 @@ export default function LandingPage() {
               {
                 title: "Smart Watches",
                 subtitle: "Screen, battery, crown",
-                color: "from-blue-600 to-blue-600",
+                color: "from-transparent to-transparent",
                 icon: Watch,
                 image: "⌚",
                 imageUrl: "/images/watch.png",
@@ -470,7 +463,7 @@ export default function LandingPage() {
                 title: "Servers & Desktops",
                 subtitle:
                   "Repairs, and Servicing of Business & personal computers",
-                color: "from-blue-600 to-blue-600",
+                color: "from-transparent to-transparent",
                 icon: Headphones,
                 image: "🖥️",
                 imageUrl: "/images/server.png",
@@ -479,7 +472,7 @@ export default function LandingPage() {
               {
                 title: "Accessories",
                 subtitle: "Cables, chargers, cases, headsets, and more",
-                color: "from-blue-600 to-blue-600",
+                color: "from-transparent to-transparent",
                 icon: Package,
                 image: "📦",
                 imageUrl: "/images/accessories.png",
@@ -489,7 +482,7 @@ export default function LandingPage() {
               <Link
                 key={service.title}
                 href={service.href}
-                className={`group relative bg-white rounded-3xl p-8 transition-all duration-500 border border-gray-200 hover:border-orange-300 overflow-hidden hover:scale-[1.02] shadow-sm hover:shadow-lg dark:bg-white/5 dark:border-white/10 dark:hover:bg-white/10 dark:hover:shadow-2xl dark:hover:shadow-orange-500/20 ${
+                className={`group relative bg-white rounded-3xl p-8 transition-all duration-500 border border-gray-200 hover:border-orange-600 overflow-hidden hover:scale-[1.02] shadow-sm hover:shadow-lg dark:bg-white/5 dark:border-white/10 dark:hover:bg-white/10 dark:hover:shadow-2xl dark:hover:shadow-orange-500/20 ${
                   isVisible["services"]
                     ? "opacity-100 translate-y-0"
                     : "opacity-0 translate-y-10"
@@ -518,13 +511,13 @@ export default function LandingPage() {
                     </span>
                   </div>
                   {/* <service.icon className="w-12 h-12 mb-6 text-gray-500 dark:text-white/60 group-hover:text-orange-500 transition-colors" /> */}
-                  <h3 className="text-3xl font-bold mb-2 group-hover:text-white transition-colors">
+                  <h3 className="text-3xl font-bold mb-2 group-hover:text-blue-600 transition-colors">
                     {service.title}
                   </h3>
-                  <p className="text-muted-foreground group-hover:text-white/80 mb-6">
+                  <p className="text-muted-foreground  mb-6">
                     {service.subtitle}
                   </p>
-                  <div className="flex items-center text-sm font-medium text-orange-600 dark:text-white/80 group-hover:text-orange-300">
+                  <div className="flex items-center text-sm font-medium text-orange-600 dark:text-white/80 group-hover:text-orange-700">
                     Learn more{" "}
                     <ChevronRight className="ml-1 w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </div>
@@ -594,8 +587,8 @@ export default function LandingPage() {
                   transitionDelay: `${i * 150}ms`,
                 }}
               >
-                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-blue-600/15 mb-6 group-hover:from-orange-600/40 group-hover:to-blue-600/40 transition-all duration-300 group-hover:scale-110 group-hover:rotate-12">
-                  <feature.icon className="w-10 h-10 text-orange-400 group-hover:text-orange-300 transition-colors" />
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-blue-600 mb-6 group-hover:from-orange-600/40 group-hover:to-blue-600/40 transition-all duration-300 group-hover:scale-110 group-hover:rotate-12">
+                  <feature.icon className="w-10 h-10 text-white group-hover:text-white transition-colors" />
                 </div>
                 <h3 className="text-2xl font-semibold mb-3">{feature.title}</h3>
                 <p className="text-gray-600 dark:text-gray-400 leading-relaxed">

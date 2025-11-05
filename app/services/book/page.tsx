@@ -16,6 +16,8 @@ import {
   Clock,
   Info,
   AlertCircle,
+  MapPin,
+  ArrowRight,
 } from "lucide-react";
 
 export default function BookRepairPage() {
@@ -392,8 +394,7 @@ ${
               Book a Repair
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Get your device repaired by our expert technicians. No account
-              required.
+              Get your device repaired by our expert technicians.
             </p>
           </div>
         </div>
@@ -755,6 +756,31 @@ ${
                   </div>
                 </div>
               )}
+
+              {formData.dropoffType === "DROPOFF" && (
+                <div className="space-y-4">
+                  <div className="p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+                    <div className="flex items-start gap-3 ">
+                      <MapPin className="h-5 w-5 text-orange-600 shrink-0 mt-0.5" />
+                      <div className="text-sm text-orange-900 dark:text-orange-100">
+                        <p className="font-semibold mb-1">
+                          Agudama Street, D-Line Port Harcourt.{" "}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-orange-800 dark:text-orange-200">
+                      I'll bring in my device to this address myself for
+                      inspection and possible repairs.
+                    </p>
+                    <span className="flex relative hover:underline text-sm ">
+                      {" "}
+                      <Link href="" target="_blank" className="flex p-2">
+                        Get Direction 📍
+                      </Link>
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Optional Customer Request */}
@@ -804,24 +830,6 @@ ${
             </Button>
           </form>
         </Card>
-
-        {/* Additional Info */}
-        <div className="mt-8 text-center">
-          <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <span>No Account Needed</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Shield className="h-4 w-4 text-blue-600" />
-              <span>Secure Process</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-orange-600" />
-              <span>Quick Response</span>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -13,7 +13,7 @@ import {
   ShoppingBag,
   Package,
 } from "lucide-react";
-
+import Image from "next/image";
 export default function ShopPage() {
   const categories = [
     {
@@ -23,6 +23,7 @@ export default function ShopPage() {
       itemCount: "150+ parts",
       color: "text-blue-600 bg-blue-100 dark:bg-blue-900/30",
       href: "/parts?category=smartphone",
+      imageUrl: "/images/1.png",
     },
     {
       icon: Laptop,
@@ -31,6 +32,7 @@ export default function ShopPage() {
       itemCount: "200+ parts",
       color: "text-purple-600 bg-purple-100 dark:bg-purple-900/30",
       href: "/parts?category=laptop",
+      imageUrl: "/images/1.png",
     },
     {
       icon: Tablet,
@@ -39,6 +41,7 @@ export default function ShopPage() {
       itemCount: "80+ parts",
       color: "text-green-600 bg-green-100 dark:bg-green-900/30",
       href: "/parts?category=tablet",
+      imageUrl: "/images/1.png",
     },
     {
       icon: Watch,
@@ -47,6 +50,7 @@ export default function ShopPage() {
       itemCount: "50+ parts",
       color: "text-orange-600 bg-orange-100 dark:bg-orange-900/30",
       href: "/parts?category=watch",
+      imageUrl: "/images/1.png",
     },
     {
       icon: Headphones,
@@ -55,6 +59,7 @@ export default function ShopPage() {
       itemCount: "40+ parts",
       color: "text-pink-600 bg-pink-100 dark:bg-pink-900/30",
       href: "/parts?category=audio",
+      imageUrl: "/images/1.png",
     },
     {
       icon: Monitor,
@@ -63,9 +68,24 @@ export default function ShopPage() {
       itemCount: "120+ parts",
       color: "text-indigo-600 bg-indigo-100 dark:bg-indigo-900/30",
       href: "/parts?category=desktop",
+      imageUrl: "/images/1.png",
     },
   ];
 
+  const brands = [
+    { name: "Apple", logo: "/images/1.png" },
+    { name: "Samsung", logo: "/images/2.png" },
+    { name: "Dell", logo: "/images/1.png" },
+    { name: "HP", logo: "/images/1.png" },
+    { name: "Lenovo", logo: "ímages/1.png" },
+    { name: "Asus", logo: "/images/asus.png" },
+    { name: "Microsoft", logo: "/images/microsoft.png" },
+    { name: "Google", logo: "images/clear-logo.png" },
+    { name: "Sony", logo: "images/clear-logo.png" },
+    { name: "Canon", logo: "images/clear-logo.png" },
+    { name: "Toshiba", logo: "images/clear-logo.png" },
+    { name: "Xiaomi", logo: "images/clear-logo.png" },
+  ];
   const popularDevices = [
     {
       name: "iPhone 13",
@@ -73,6 +93,7 @@ export default function ShopPage() {
       rating: 4.8,
       repairs: "2.5k+",
       image: "📱",
+      imageUrl: "/images/iphone.png",
     },
     {
       name: "MacBook Pro",
@@ -80,6 +101,7 @@ export default function ShopPage() {
       rating: 4.9,
       repairs: "1.8k+",
       image: "💻",
+      imageUrl: "/images/1.png",
     },
     {
       name: "Galaxy S23",
@@ -87,6 +109,7 @@ export default function ShopPage() {
       rating: 4.7,
       repairs: "1.2k+",
       image: "📱",
+      imageUrl: "/images/1.png",
     },
     {
       name: "iPad Air",
@@ -94,6 +117,7 @@ export default function ShopPage() {
       rating: 4.8,
       repairs: "900+",
       image: "📱",
+      imageUrl: "/images/1.png",
     },
     {
       name: "Dell XPS 15",
@@ -101,6 +125,7 @@ export default function ShopPage() {
       rating: 4.6,
       repairs: "750+",
       image: "💻",
+      imageUrl: "/images/1.png",
     },
     {
       name: "Surface Pro",
@@ -108,6 +133,7 @@ export default function ShopPage() {
       rating: 4.7,
       repairs: "650+",
       image: "📱",
+      imageUrl: "/images/1.png",
     },
   ];
 
@@ -211,7 +237,14 @@ export default function ShopPage() {
                 className="p-6 hover:shadow-lg transition-shadow"
               >
                 <div className="flex items-start gap-4">
-                  <div className="text-5xl">{device.image}</div>
+                  {/* <div className="text-5xl">{device.image}</div> */}
+                  <Image
+                    src={device.imageUrl}
+                    alt={device.name}
+                    height={48}
+                    width={48}
+                  />
+
                   <div className="flex-1">
                     <h3 className="text-lg font-bold mb-1">{device.name}</h3>
                     <p className="text-sm text-muted-foreground mb-3">
@@ -270,23 +303,19 @@ export default function ShopPage() {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
-            {[
-              "Apple",
-              "Samsung",
-              "Dell",
-              "HP",
-              "Lenovo",
-              "Asus",
-              "Microsoft",
-              "Google",
-              "Sony",
-              "LG",
-              "OnePlus",
-              "Xiaomi",
-            ].map((brand) => (
-              <Link key={brand} href={`/parts?brand=${brand}`}>
+            {brands.map((brand) => (
+              <Link key={brand.name} href={`/parts?brand=${brand.name}`}>
                 <Card className="p-6 text-center hover:shadow-lg transition-shadow cursor-pointer">
-                  <p className="font-semibold">{brand}</p>
+                  <div className="flex">
+                    <Image
+                      src={brand.logo}
+                      alt={brand.name}
+                      height={24}
+                      width={24}
+                      className="mr-3"
+                    />
+                    <p className="font-semibold">{brand.name}</p>
+                  </div>
                 </Card>
               </Link>
             ))}

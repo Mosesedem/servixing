@@ -368,8 +368,8 @@ export default function WarrantyDeviceCheckPage() {
               <div>
                 <h3 className="font-semibold mb-2">Supported Brands</h3>
                 <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Apple (iPhone, iPad, Mac)</li>
-                  <li>• Dell (Laptops, Desktops)</li>
+                  <li>• Apple </li>
+                  <li>• Dell</li>
                   <li>• More brands coming soon</li>
                 </ul>
               </div>
@@ -507,24 +507,6 @@ export default function WarrantyDeviceCheckPage() {
             </Button>
           </form>
         </Card>
-
-        {/* Trust Indicators */}
-        <div className="mt-8 text-center">
-          <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <span>Secure Payment</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Shield className="h-4 w-4 text-blue-600" />
-              <span>Real-time Results</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Info className="h-4 w-4 text-orange-600" />
-              <span>Instant Report</span>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

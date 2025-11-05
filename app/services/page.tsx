@@ -13,7 +13,10 @@ import {
   CheckCircle,
   Clock,
   Shield,
-  DollarSign,
+  Currency,
+  EuroIcon,
+  Diff,
+  Dot,
 } from "lucide-react";
 
 export default function ServicesPage() {
@@ -25,14 +28,22 @@ export default function ServicesPage() {
       services: [
         {
           name: "Screen Replacement",
-          price: "From $79",
+          price: "From ₦20,000",
           duration: "1-2 hours",
         },
-        { name: "Battery Replacement", price: "From $49", duration: "30 mins" },
-        { name: "Charging Port Repair", price: "From $59", duration: "1 hour" },
+        {
+          name: "Battery Replacement",
+          price: "From ₦20,000",
+          duration: "30 mins",
+        },
+        {
+          name: "Charging Port Repair",
+          price: "From ₦20,000",
+          duration: "1 hour",
+        },
         {
           name: "Camera Replacement",
-          price: "From $69",
+          price: "From ₦20,000",
           duration: "1-2 hours",
         },
       ],
@@ -45,18 +56,18 @@ export default function ServicesPage() {
       services: [
         {
           name: "Keyboard Replacement",
-          price: "From $89",
+          price: "From ₦20,000",
           duration: "2-3 hours",
         },
         {
           name: "Screen Replacement",
-          price: "From $149",
+          price: "From ₦20,000",
           duration: "2-4 hours",
         },
-        { name: "SSD/HDD Upgrade", price: "From $99", duration: "1-2 hours" },
+        { name: "SSD/HDD Upgrade", price: "From ₦99", duration: "1-2 hours" },
         {
           name: "Motherboard Repair",
-          price: "From $199",
+          price: "From ₦50,000",
           duration: "3-5 days",
         },
       ],
@@ -69,28 +80,40 @@ export default function ServicesPage() {
       services: [
         {
           name: "Screen Replacement",
-          price: "From $99",
+          price: "From ₦20,000",
           duration: "2-3 hours",
         },
         {
           name: "Battery Replacement",
-          price: "From $79",
+          price: "From ₦20,000",
           duration: "1-2 hours",
         },
-        { name: "Charging Port Repair", price: "From $69", duration: "1 hour" },
-        { name: "Software Restoration", price: "From $39", duration: "1 hour" },
+        {
+          name: "Charging Port Repair",
+          price: "From ₦20,000",
+          duration: "1 hour",
+        },
+        {
+          name: "Software Restoration",
+          price: "From ₦20,000",
+          duration: "1 hour",
+        },
       ],
       color: "text-green-600 bg-green-100 dark:bg-green-900/30",
     },
     {
       icon: Monitor,
-      category: "Desktop & Monitor",
-      description: "Desktop computer and monitor services",
+      category: "Servers and Desktops",
+      description: "Business machines, Desktop computer and monitor services",
       services: [
-        { name: "Hardware Upgrade", price: "From $79", duration: "1-2 hours" },
-        { name: "Virus Removal", price: "From $49", duration: "2-4 hours" },
-        { name: "Data Recovery", price: "From $149", duration: "3-7 days" },
-        { name: "Monitor Repair", price: "From $99", duration: "2-3 days" },
+        {
+          name: "Hardware Upgrade",
+          price: "From ₦20,000",
+          duration: "1-2 hours",
+        },
+        { name: "Virus Removal", price: "From ₦20,000", duration: "2-4 hours" },
+        { name: "Data Recovery", price: "From ₦20,000", duration: "3-7 days" },
+        { name: "Monitor Repair", price: "From ₦20,000", duration: "2-3 days" },
       ],
       color: "text-orange-600 bg-orange-100 dark:bg-orange-900/30",
     },
@@ -107,7 +130,7 @@ export default function ServicesPage() {
         "Ultrasonic cleaning",
         "Component-level repair",
       ],
-      price: "From $79",
+      price: "From ₦20,000",
     },
     {
       icon: HardDrive,
@@ -115,13 +138,13 @@ export default function ServicesPage() {
       description:
         "Professional data recovery from damaged, corrupted, or failed storage devices",
       features: ["No data, no charge", "Secure process", "All storage types"],
-      price: "From $149",
+      price: "From ₦20,000",
     },
     {
       icon: Wrench,
-      title: "Custom Builds",
+      title: "Enterprise & Custom Builds",
       description:
-        "Custom PC builds tailored to your needs - gaming, workstation, or home office",
+        "Business computer solutions and Custom PC builds tailored to your needs -Servers, gaming, workstation, or home office",
       features: [
         "Expert consultation",
         "Quality components",
@@ -177,7 +200,7 @@ export default function ServicesPage() {
           {services.map((service) => (
             <Card key={service.category} className="p-6">
               <div className="flex items-start gap-4 mb-6">
-                <div className={`p-3 rounded-lg ${service.color}`}>
+                <div className={`p-3 rounded-lg ₦{service.color}`}>
                   <service.icon className="h-8 w-8" />
                 </div>
                 <div>
@@ -198,7 +221,7 @@ export default function ServicesPage() {
                       <h3 className="font-semibold mb-1">{item.name}</h3>
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
-                          <DollarSign className="h-4 w-4" />
+                          <Dot className="h-4 w-4" />
                           {item.price}
                         </div>
                         <div className="flex items-center gap-1">
