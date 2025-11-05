@@ -9,36 +9,36 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  console.log("=== DASHBOARD LAYOUT START ===");
-  console.log("Timestamp:", new Date().toISOString());
+  // console.log("=== DASHBOARD LAYOUT START ===");
+  // console.log("Timestamp:", new Date().toISOString());
 
   try {
-    console.log("Layout: Fetching session...");
+    // console.log("Layout: Fetching session...");
     const session = await getServerSession(authOptions);
 
-    console.log("Layout: Session result:", {
-      hasSession: !!session,
-      user: session?.user
-        ? {
-            email: session.user.email,
-            name: session.user.name,
-          }
-        : null,
-    });
+    // console.log("Layout: Session result:", {
+    //   hasSession: !!session,
+    //   user: session?.user
+    //     ? {
+    //         email: session.user.email,
+    //         name: session.user.name,
+    //       }
+    //     : null,
+    // });
 
     if (!session) {
-      console.log("Layout: No session found - redirecting to /auth/signin");
+      // console.log("Layout: No session found - redirecting to /auth/signin");
       redirect("/auth/signin");
     }
 
-    console.log("Layout: Session valid - rendering layout");
+    // console.log("Layout: Session valid - rendering layout");
   } catch (error) {
-    console.error("=== DASHBOARD LAYOUT ERROR ===");
-    console.error("Error type:", error?.constructor?.name);
-    console.error(
-      "Error message:",
-      error instanceof Error ? error.message : error
-    );
+    // console.error("=== DASHBOARD LAYOUT ERROR ===");
+    // console.error("Error type:", error?.constructor?.name);
+    // console.error(
+    //   "Error message:",
+    //   error instanceof Error ? error.message : error
+    // );
     throw error;
   }
 

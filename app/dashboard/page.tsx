@@ -66,165 +66,244 @@ async function getDashboardData(userId: string): Promise<DashboardData | null> {
     const { prisma } = await import("@/lib/db");
     const { WorkOrderStatus, PaymentStatus } = await import("@prisma/client");
 
-    // Fetch all work orders for the user
-    const workOrders = await prisma.workOrder.findMany({
-      where: {
-        userId,
-        deletedAt: null,
-      },
-      include: {
-        payments: true,
-        device: {
-          select: {
-            brand: true,
-            model: true,
-            deviceType: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
-
-    // Calculate statistics
-    const totalOrders = workOrders.length;
-    const activeRepairs = workOrders.filter(
-      (wo) =>
-        wo.status === WorkOrderStatus.ACCEPTED ||
-        wo.status === WorkOrderStatus.IN_REPAIR ||
-        wo.status === WorkOrderStatus.AWAITING_PARTS
-    ).length;
-
-    const completedRepairs = workOrders.filter(
-      (wo) => wo.status === WorkOrderStatus.COMPLETED
-    ).length;
-
-    const readyForPickup = workOrders.filter(
-      (wo) => wo.status === WorkOrderStatus.READY_FOR_PICKUP
-    ).length;
-
-    const pendingPayments = workOrders.filter(
-      (wo) => wo.paymentStatus === PaymentStatus.PENDING
-    ).length;
-
-    const totalSpent = workOrders
-      .filter(
-        (wo) => wo.paymentStatus === PaymentStatus.PAID && wo.finalCost !== null
-      )
-      .reduce((sum, wo) => sum + Number(wo.finalCost || 0), 0);
-
-    const pendingAmount = workOrders
-      .filter((wo) => wo.paymentStatus === PaymentStatus.PENDING)
-      .reduce((sum, wo) => sum + Number(wo.totalAmount || 0), 0);
-
-    // Status breakdown
-    const statusBreakdown = {
-      created: workOrders.filter((wo) => wo.status === WorkOrderStatus.CREATED)
-        .length,
-      accepted: workOrders.filter(
-        (wo) => wo.status === WorkOrderStatus.ACCEPTED
-      ).length,
-      inRepair: workOrders.filter(
-        (wo) => wo.status === WorkOrderStatus.IN_REPAIR
-      ).length,
-      awaitingParts: workOrders.filter(
-        (wo) => wo.status === WorkOrderStatus.AWAITING_PARTS
-      ).length,
-      readyForPickup: workOrders.filter(
-        (wo) => wo.status === WorkOrderStatus.READY_FOR_PICKUP
-      ).length,
-      completed: workOrders.filter(
-        (wo) => wo.status === WorkOrderStatus.COMPLETED
-      ).length,
-      cancelled: workOrders.filter(
-        (wo) => wo.status === WorkOrderStatus.CANCELLED
-      ).length,
-    };
-
-    // Recent activity (last 30 days)
+    // Time windows
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    const recentOrders = workOrders.filter(
-      (wo) => new Date(wo.createdAt) >= thirtyDaysAgo
-    );
-
-    // Monthly spending trend (last 6 months)
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-    const monthlySpending = workOrders
-      .filter(
-        (wo) =>
-          wo.paymentStatus === PaymentStatus.PAID &&
-          new Date(wo.createdAt) >= sixMonthsAgo
-      )
-      .reduce((acc, wo) => {
-        const month = new Date(wo.createdAt).toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "short",
-        });
-        if (!acc[month]) {
-          acc[month] = 0;
-        }
-        acc[month] += Number(wo.finalCost || 0);
-        return acc;
-      }, {} as Record<string, number>);
+    // Aggregate metrics at the database level for correctness
+    const [
+      workOrderStatusGroup,
+      pendingPaymentsCount,
+      paidAgg,
+      pendingAgg,
+      recentWorkOrdersRaw,
+      devicesGroup,
+      supportTickets,
+      ordersLast30Days,
+      completedLast30Days,
+      totalDevices,
+    ] = await Promise.all([
+      // Status breakdown
+      prisma.workOrder.groupBy({
+        by: ["status"],
+        where: { userId, deletedAt: null },
+        _count: { _all: true },
+      }),
+      // Pending payments count
+      prisma.workOrder.count({
+        where: {
+          userId,
+          deletedAt: null,
+          paymentStatus: PaymentStatus.PENDING,
+        },
+      }),
+      // Total spent (sum of finalCost for paid work orders)
+      prisma.workOrder.aggregate({
+        where: {
+          userId,
+          deletedAt: null,
+          paymentStatus: PaymentStatus.PAID,
+          finalCost: { not: null },
+        },
+        _sum: { finalCost: true },
+      }),
+      // Pending amount (sum of totalAmount for pending work orders)
+      prisma.workOrder.aggregate({
+        where: {
+          userId,
+          deletedAt: null,
+          paymentStatus: PaymentStatus.PENDING,
+          totalAmount: { not: null },
+        },
+        _sum: { totalAmount: true },
+      }),
+      // Recent work orders
+      prisma.workOrder.findMany({
+        where: { userId, deletedAt: null },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        select: {
+          id: true,
+          status: true,
+          createdAt: true,
+          finalCost: true,
+          paymentStatus: true,
+          device: { select: { brand: true, model: true } },
+        },
+      }),
+      // Device stats by type
+      prisma.device.groupBy({
+        by: ["deviceType"],
+        where: { userId, deletedAt: null },
+        _count: { _all: true },
+      }),
+      // Support tickets group
+      prisma.supportTicket.groupBy({
+        by: ["status"],
+        where: { userId, deletedAt: null },
+        _count: true,
+      }),
+      // Recent activity counts
+      prisma.workOrder.count({
+        where: { userId, deletedAt: null, createdAt: { gte: thirtyDaysAgo } },
+      }),
+      prisma.workOrder.count({
+        where: {
+          userId,
+          deletedAt: null,
+          createdAt: { gte: thirtyDaysAgo },
+          status: WorkOrderStatus.COMPLETED,
+        },
+      }),
+      // Total devices
+      prisma.device.count({ where: { userId, deletedAt: null } }),
+    ]);
 
-    const spendingTrend = Object.entries(monthlySpending).map(
-      ([month, amount]) => ({
-        month,
-        amount,
-      })
+    console.log("--- DEBUGGING DASHBOARD DATA ---");
+    console.log("User ID:", userId);
+    console.log(
+      "Work Order Status Group:",
+      JSON.stringify(workOrderStatusGroup, null, 2)
+    );
+    console.log("Pending Payments Count:", pendingPaymentsCount);
+    console.log("Paid Aggregation:", JSON.stringify(paidAgg, null, 2));
+    console.log("Pending Aggregation:", JSON.stringify(pendingAgg, null, 2));
+    console.log(
+      "Recent Work Orders Raw:",
+      JSON.stringify(recentWorkOrdersRaw, null, 2)
+    );
+    console.log("Devices Group:", JSON.stringify(devicesGroup, null, 2));
+    console.log("Support Tickets:", JSON.stringify(supportTickets, null, 2));
+    console.log("Orders Last 30 Days:", ordersLast30Days);
+    console.log("Completed Last 30 Days:", completedLast30Days);
+    console.log("Total Devices:", totalDevices);
+
+    // Additional diagnostic queries
+    const totalWorkOrdersAllStatuses = await prisma.workOrder.count({
+      where: { userId },
+    });
+    const totalWorkOrdersIncludingDeleted = await prisma.workOrder.count({
+      where: { userId, deletedAt: { not: null } },
+    });
+    const totalDevicesAllStatuses = await prisma.device.count({
+      where: { userId },
+    });
+
+    console.log("\n--- DIAGNOSTIC INFO ---");
+    console.log(
+      "Total Work Orders (including deleted):",
+      totalWorkOrdersAllStatuses
+    );
+    console.log("Soft-deleted Work Orders:", totalWorkOrdersIncludingDeleted);
+    console.log("Total Devices (including deleted):", totalDevicesAllStatuses);
+    console.log(
+      "Non-deleted Work Orders:",
+      totalWorkOrdersAllStatuses - totalWorkOrdersIncludingDeleted
     );
 
-    // Device type breakdown
-    const deviceBreakdown = workOrders.reduce((acc, wo) => {
-      const deviceType = wo.device.deviceType || "Unknown";
-      if (!acc[deviceType]) {
-        acc[deviceType] = 0;
-      }
-      acc[deviceType]++;
+    if (totalWorkOrdersAllStatuses === 0 && totalDevicesAllStatuses === 0) {
+      console.log(
+        "\n⚠️  WARNING: This user has NO work orders or devices in the database."
+      );
+      console.log(
+        "   This is expected for a new user. Create devices and work orders to see data."
+      );
+    } else if (totalWorkOrdersIncludingDeleted > 0) {
+      console.log(
+        "\n⚠️  WARNING: All work orders for this user are soft-deleted (deletedAt IS NOT NULL)."
+      );
+    }
+    console.log("---------------------------------\n");
+
+    // Build status breakdown from groupBy
+    const statusBreakdown = {
+      created:
+        workOrderStatusGroup.find((s) => s.status === WorkOrderStatus.CREATED)
+          ?._count._all || 0,
+      accepted:
+        workOrderStatusGroup.find((s) => s.status === WorkOrderStatus.ACCEPTED)
+          ?._count._all || 0,
+      inRepair:
+        workOrderStatusGroup.find((s) => s.status === WorkOrderStatus.IN_REPAIR)
+          ?._count._all || 0,
+      awaitingParts:
+        workOrderStatusGroup.find(
+          (s) => s.status === WorkOrderStatus.AWAITING_PARTS
+        )?._count._all || 0,
+      readyForPickup:
+        workOrderStatusGroup.find(
+          (s) => s.status === WorkOrderStatus.READY_FOR_PICKUP
+        )?._count._all || 0,
+      completed:
+        workOrderStatusGroup.find((s) => s.status === WorkOrderStatus.COMPLETED)
+          ?._count._all || 0,
+      cancelled:
+        workOrderStatusGroup.find((s) => s.status === WorkOrderStatus.CANCELLED)
+          ?._count._all || 0,
+    };
+
+    const totalOrders = Object.values(statusBreakdown).reduce(
+      (sum, n) => sum + n,
+      0
+    );
+    const activeRepairs =
+      statusBreakdown.accepted +
+      statusBreakdown.inRepair +
+      statusBreakdown.awaitingParts;
+    const completedRepairs = statusBreakdown.completed;
+    const readyForPickup = statusBreakdown.readyForPickup;
+    const pendingPayments = pendingPaymentsCount;
+
+    const totalSpent = Number(paidAgg._sum.finalCost || 0);
+    const pendingAmount = Number(pendingAgg._sum.totalAmount || 0);
+
+    // Spending trend (last 6 months)
+    const paidLastSix = await prisma.workOrder.findMany({
+      where: {
+        userId,
+        deletedAt: null,
+        paymentStatus: PaymentStatus.PAID,
+        finalCost: { not: null },
+        createdAt: { gte: sixMonthsAgo },
+      },
+      select: { createdAt: true, finalCost: true },
+      orderBy: { createdAt: "asc" },
+    });
+
+    const monthlySpending = paidLastSix.reduce((acc, wo) => {
+      const month = new Date(wo.createdAt).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+      });
+      if (!acc[month]) acc[month] = 0;
+      acc[month] += Number(wo.finalCost || 0);
       return acc;
     }, {} as Record<string, number>);
 
-    const deviceStats = Object.entries(deviceBreakdown).map(
-      ([type, count]) => ({
-        type,
-        count,
-      })
+    const spendingTrend = Object.entries(monthlySpending).map(
+      ([month, amount]) => ({ month, amount })
     );
 
+    // Device stats from groupBy
+    const deviceStats = devicesGroup.map((d) => ({
+      type: d.deviceType || "Unknown",
+      count: d._count._all,
+    }));
+
     // Recent work orders (last 5)
-    const recentWorkOrders = workOrders.slice(0, 5).map((wo) => ({
+    const recentWorkOrders = recentWorkOrdersRaw.map((wo) => ({
       id: wo.id,
       status: wo.status,
-      deviceBrand: wo.device.brand,
-      deviceModel: wo.device.model,
+      deviceBrand: wo.device?.brand || "",
+      deviceModel: wo.device?.model || "",
       createdAt: wo.createdAt,
       finalCost: wo.finalCost ? Number(wo.finalCost) : null,
       paymentStatus: wo.paymentStatus,
     }));
 
-    // Get total devices
-    const totalDevices = await prisma.device.count({
-      where: {
-        userId,
-        deletedAt: null,
-      },
-    });
-
-    // Get support tickets count
-    const supportTickets = await prisma.supportTicket.groupBy({
-      by: ["status"],
-      where: {
-        userId,
-        deletedAt: null,
-      },
-      _count: true,
-    });
-
+    // Tickets
     const ticketStats = {
       open: supportTickets.find((t) => t.status === "OPEN")?._count || 0,
       inProgress:
@@ -249,10 +328,8 @@ async function getDashboardData(userId: string): Promise<DashboardData | null> {
       deviceStats,
       recentWorkOrders,
       recentActivity: {
-        ordersLast30Days: recentOrders.length,
-        completedLast30Days: recentOrders.filter(
-          (wo) => wo.status === WorkOrderStatus.COMPLETED
-        ).length,
+        ordersLast30Days,
+        completedLast30Days,
       },
       ticketStats,
     };
