@@ -25,6 +25,8 @@ import {
   LifeBuoy,
   HandHelping,
   Headset,
+  LogOut,
+  User,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
@@ -79,7 +81,7 @@ export function Navbar() {
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between p-2">
+          <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link
               href="/"
@@ -312,18 +314,20 @@ export function Navbar() {
             </div>
 
             {/* Mobile menu button */}
-            <button
+            <Button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-300"
+              size="icon"
+              variant="ghost"
+              className="md:hidden"
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? (
-                <X className="h-6 w-6" />
+                <X className="h-5 w-5" />
               ) : (
-                <Menu className="h-6 w-6" />
+                <Menu className="h-5 w-5" />
               )}
-            </button>
+            </Button>
           </div>
         </div>
       </nav>
@@ -331,40 +335,40 @@ export function Navbar() {
       {/* Mobile Navigation Overlay */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
-      {/* Mobile Navigation Menu */}
+      {/* Mobile Navigation Menu - Full Width Slide Down */}
       <div
-        className={`fixed top-16 right-0 bottom-0 w-80 max-w-[85vw] bg-background border-l border-border shadow-2xl z-40 md:hidden transform transition-transform duration-300 ease-out ${
-          mobileMenuOpen ? "translate-x-0" : "translate-x-full"
+        className={`fixed top-16 left-0 right-0 max-h-[calc(100vh-4rem)] bg-background border-b border-border shadow-2xl z-40 md:hidden transform transition-transform duration-300 ease-out overflow-y-auto ${
+          mobileMenuOpen ? "translate-y-0" : "-translate-y-full"
         }`}
       >
-        <div className="flex flex-col h-full overflow-y-auto p-4">
-          {/* Main Navigation */}
-          <div className="space-y-1 pb-4">
+        <div className="p-4 pb-6">
+          {/* Main Navigation - Grid Layout */}
+          <div className="grid grid-cols-2 gap-3 pb-4">
             <Link
               href="/parts"
-              className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-all duration-300 ${
+              className={`flex flex-col items-center gap-2 px-4 py-4 text-sm font-medium rounded-lg transition-all duration-300 ${
                 isActive("/parts")
                   ? "bg-brand-orange-light text-brand-orange"
                   : "text-muted-foreground hover:bg-accent hover:text-foreground"
               }`}
             >
-              <Search className="h-5 w-5" />
+              <Search className="h-6 w-6" />
               <span>Find Parts</span>
             </Link>
             <Link
               href="/shop"
-              className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-all duration-300 ${
+              className={`flex flex-col items-center gap-2 px-4 py-4 text-sm font-medium rounded-lg transition-all duration-300 ${
                 isActive("/shop")
                   ? "bg-brand-orange-light text-brand-orange"
                   : "text-muted-foreground hover:bg-accent hover:text-foreground"
               }`}
             >
-              <ShoppingBag className="h-5 w-5" />
+              <ShoppingBag className="h-6 w-6" />
               <span>Shop</span>
             </Link>
           </div>
@@ -374,20 +378,27 @@ export function Navbar() {
             <div className="px-4 pb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Services
             </div>
-            <div className="space-y-1">
+            <div className="grid grid-cols-2 gap-2">
               <Link
                 href="/services"
-                className="flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all duration-300"
+                className="flex flex-col items-center gap-2 px-3 py-3 text-sm font-medium rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all duration-300"
               >
-                <Wrench className="h-5 w-5" />
-                <span>All Services</span>
+                <Wrench className="h-6 w-6" />
+                <span className="text-xs">All Services</span>
+              </Link>
+              <Link
+                href="/services/book"
+                className="flex flex-col items-center gap-2 px-3 py-3 text-sm font-medium rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all duration-300"
+              >
+                <Cog className="h-6 w-6" />
+                <span className="text-xs">Book Repairs</span>
               </Link>
               <Link
                 href="/services/warranty-device-check"
-                className="flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all duration-300"
+                className="flex flex-col items-center gap-2 px-3 py-3 text-sm font-medium rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all duration-300"
               >
-                <Shield className="h-5 w-5" />
-                <span>Warranty & Device Check</span>
+                <Shield className="h-6 w-6" />
+                <span className="text-xs text-center">Warranty Check</span>
               </Link>
             </div>
           </div>
@@ -397,52 +408,54 @@ export function Navbar() {
             <div className="px-4 pb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Help & Support
             </div>
-            <div className="space-y-1">
+            <div className="grid grid-cols-2 gap-2">
               <Link
                 href="/help"
-                className="flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all duration-300"
+                className="flex flex-col items-center gap-2 px-3 py-3 text-sm font-medium rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all duration-300"
               >
-                <HelpCircle className="h-5 w-5" />
-                <span>Help Center</span>
+                <HelpCircle className="h-6 w-6" />
+                <span className="text-xs">Help Center</span>
               </Link>
               <Link
                 href="/knowledge-base"
-                className="flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all duration-300"
+                className="flex flex-col items-center gap-2 px-3 py-3 text-sm font-medium rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all duration-300"
               >
-                <BookOpen className="h-5 w-5" />
-                <span>Knowledge Base</span>
+                <BookOpen className="h-6 w-6" />
+                <span className="text-xs text-center">Knowledge Base</span>
               </Link>
               <Link
                 href="/support/create-ticket"
-                className="flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all duration-300"
+                className="flex flex-col items-center gap-2 px-3 py-3 text-sm font-medium rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all duration-300"
               >
-                <HelpCircle className="h-5 w-5" />
-                <span>Create Ticket</span>
+                <Ticket className="h-6 w-6" />
+                <span className="text-xs text-center">Create Ticket</span>
               </Link>
               <Link
                 href="/support"
-                className="flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all duration-300"
+                className="flex flex-col items-center gap-2 px-3 py-3 text-sm font-medium rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all duration-300"
               >
-                <HelpCircle className="h-5 w-5" />
-                <span>Support</span>
+                <HandHelping className="h-6 w-6" />
+                <span className="text-xs">Support</span>
               </Link>
             </div>
           </div>
 
           {/* Account Section */}
-          <div className="border-t border-border pt-4 mt-auto">
-            <div className="space-y-2">
+          <div className="border-t border-border pt-4">
+            <div className="grid grid-cols-2 gap-2">
               {session ? (
                 <>
                   <Button
                     asChild
                     variant="ghost"
-                    size="md"
-                    className="w-full justify-start"
+                    className="h-auto flex-col py-3 px-3"
                   >
-                    <Link href="/dashboard" className="flex items-center gap-2">
-                      <LayoutDashboard className="h-4 w-4" />
-                      <span>Dashboard</span>
+                    <Link
+                      href="/dashboard"
+                      className="flex flex-col items-center gap-2"
+                    >
+                      <LayoutDashboard className="h-6 w-6" />
+                      <span className="text-xs">Dashboard</span>
                     </Link>
                   </Button>
                   {((session.user as any)?.role === "ADMIN" ||
@@ -450,22 +463,24 @@ export function Navbar() {
                     <Button
                       asChild
                       variant="ghost"
-                      size="md"
-                      className="w-full justify-start"
+                      className="h-auto flex-col py-3 px-3"
                     >
-                      <Link href="/admin" className="flex items-center gap-2">
-                        <Settings className="h-4 w-4" />
-                        <span>Admin</span>
+                      <Link
+                        href="/admin"
+                        className="flex flex-col items-center gap-2"
+                      >
+                        <Settings className="h-6 w-6" />
+                        <span className="text-xs">Admin</span>
                       </Link>
                     </Button>
                   )}
                   <Button
                     onClick={() => signOut({ callbackUrl: "/" })}
                     variant="ghost"
-                    size="md"
-                    className="w-full justify-start"
+                    className="h-auto flex-col py-3 px-3 text-red-600"
                   >
-                    Sign Out
+                    <LogOut className="h-6 w-6" />
+                    <span className="text-xs">Sign Out</span>
                   </Button>
                 </>
               ) : (
@@ -473,17 +488,27 @@ export function Navbar() {
                   <Button
                     asChild
                     variant="ghost"
-                    size="md"
-                    className="w-full justify-start"
+                    className="h-auto flex-col py-3 px-3"
                   >
-                    <Link href="/auth/signin">Sign In</Link>
+                    <Link
+                      href="/auth/signin"
+                      className="flex flex-col items-center gap-2"
+                    >
+                      <User className="h-6 w-6" />
+                      <span className="text-xs">Sign In</span>
+                    </Link>
                   </Button>
                   <Button
                     asChild
-                    size="md"
-                    className="w-full bg-brand-orange hover:bg-brand-orange-dark text-white"
+                    className="h-auto flex-col py-3 px-3 bg-brand-orange hover:bg-brand-orange-dark text-white"
                   >
-                    <Link href="/auth/signup">Get Started</Link>
+                    <Link
+                      href="/auth/signup"
+                      className="flex flex-col items-center gap-2"
+                    >
+                      <User className="h-6 w-6" />
+                      <span className="text-xs">Get Started</span>
+                    </Link>
                   </Button>
                 </>
               )}

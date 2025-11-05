@@ -43,10 +43,10 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-background ">
+    <div className="flex min-h-screen bg-background">
       <DashboardSidebar />
-      {/* Main Content - add padding for mobile menu button */}
-      <main className="flex-1">{children}</main>
+      {/* Main Content - scrollable area */}
+      <main className="flex-1 overflow-y-auto">{children}</main>
     </div>
   );
 }
