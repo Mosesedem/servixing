@@ -63,6 +63,7 @@ export function buildRepairConfirmationEmail(params: {
   deviceType: string;
   brand: string;
   model?: string;
+  serialNumber: string;
   issue: string;
   dropoffType: string;
   address?: {
@@ -127,7 +128,9 @@ export function buildRepairConfirmationEmail(params: {
   }<br/>${params.email}</div>
         <div style=\"margin-top:10px\"><strong>Device</strong><br/>${
           params.brand
-        } ${params.deviceType} ${params.model ? `(${params.model})` : ""}</div>
+        } ${params.deviceType} ${
+    params.model ? `(${params.model})` : ""
+  } with SN: ${params.serialNumber}</div>
         <div style=\"margin-top:10px\"><strong>Issue</strong><br/>${
           params.issue
         }</div>

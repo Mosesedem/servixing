@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
     const deviceType = String(form.get("deviceType") || "").trim();
     const brand = String(form.get("brand") || "").trim();
     const model = String(form.get("model") || "").trim();
+    const serialNumber = String(form.get("serialNumber")).trim();
     const issue = String(form.get("issue") || "").trim();
     const dropoffType = String(form.get("dropoffType") || "DROPOFF").trim();
 
@@ -60,7 +61,15 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate required
-    if (!name || !email || !phone || !deviceType || !brand || !issue) {
+    if (
+      !name ||
+      !email ||
+      !phone ||
+      !deviceType ||
+      !brand ||
+      !issue ||
+      !serialNumber
+    ) {
       return NextResponse.json(
         {
           error: {
@@ -162,7 +171,7 @@ export async function POST(req: NextRequest) {
     // Compose metadata
     const metadata = {
       contact: { name, email, phone },
-      device: { deviceType, brand, model },
+      device: { deviceType, brand, model, serialNumber },
       issue,
       dropoffType,
       address:
@@ -199,6 +208,7 @@ export async function POST(req: NextRequest) {
 - Type: ${deviceType}
 - Brand: ${brand}
 - Model: ${model || "Not specified"}
+- serial Number: ${serialNumber}
 
 **Issue Description:**
 ${issue}
@@ -256,6 +266,7 @@ ${
       deviceType,
       brand,
       model,
+      serialNumber,
       issue,
       dropoffType,
       address: {
@@ -281,9 +292,9 @@ ${
     const adminHtml = `<!doctype html><html><body style=\"font-family:Arial\">\
       <h3>New Repair Request</h3>\
       <p><strong>${name}</strong> (${email} — ${phone}) submitted a request.</p>\
-      <p><strong>Device:</strong> ${brand} ${deviceType} ${
+      <p><strong>Device:</strong> ${brand} ${deviceType}  ${
       model ? `(${model})` : ""
-    }</p>\
+    } with SN:${serialNumber}</p>\
       <p><strong>Issue:</strong><br/>${issue.replace(/\n/g, "<br/>")}</p>\
       <p><strong>Service Type:</strong> ${dropoffType}</p>\
       ${

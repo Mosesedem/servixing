@@ -35,6 +35,7 @@ export default function BookRepairPage() {
     deviceType: "",
     brand: "",
     model: "",
+    serialNumber: "",
     issue: "",
     dropoffType: "DROPOFF" as "DROPOFF" | "DISPATCH",
     // Structured address fields for better detail
@@ -100,7 +101,8 @@ export default function BookRepairPage() {
         !formData.phone ||
         !formData.deviceType ||
         !formData.brand ||
-        !formData.issue
+        !formData.issue ||
+        !formData.serialNumber
       ) {
         setError("Please fill in all required fields");
         setLoading(false);
@@ -220,6 +222,7 @@ ${
                 deviceType: formData.deviceType,
                 brand: formData.brand,
                 model: formData.model || null,
+                serialNumber: formData.serialNumber,
               },
               issue: formData.issue,
               dropoffType: formData.dropoffType,
@@ -279,6 +282,7 @@ ${
         fd.set("hp", (formData as any).hp || "");
         fd.set("brand", formData.brand);
         fd.set("model", formData.model || "");
+        fd.set("serialNumber", formData.serialNumber);
         fd.set("issue", formData.issue);
         fd.set("dropoffType", formData.dropoffType);
         if (formData.dropoffType === "DISPATCH") {
@@ -557,21 +561,33 @@ ${
                   </select>
                 </div>
               </div>
-
-              <div className="space-y-2">
-                <label htmlFor="model" className="text-sm font-medium">
-                  Model (Optional)
-                </label>
-                <Input
-                  id="model"
-                  name="model"
-                  value={formData.model}
-                  onChange={handleChange}
-                  placeholder="e.g., iPhone 13 Pro, MacBook Air M2, Galaxy S23"
-                />
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label htmlFor="model" className="text-sm font-medium">
+                    Model (Optional)
+                  </label>
+                  <Input
+                    id="model"
+                    name="model"
+                    value={formData.model}
+                    onChange={handleChange}
+                    placeholder="e.g., iPhone 13 Pro, MacBook Air M2, Galaxy S23"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="model" className="text-sm font-medium">
+                    Serial Number <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    id="serialNumber"
+                    name="serialNumber"
+                    value={formData.serialNumber}
+                    onChange={handleChange}
+                    placeholder="e.g., 123abc"
+                  />
+                </div>
               </div>
             </div>
-
             {/* Issue Description */}
             <div className="space-y-2">
               <label htmlFor="issue" className="text-sm font-medium">

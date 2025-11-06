@@ -68,9 +68,34 @@ export default function DevicesPage() {
 
       const response = await fetch(`/api/devices?${params}`);
       if (response.ok) {
-        const result = await response.json();
-        setDevices(result.data.devices);
-        setTotalPages(result.data.pagination.totalPages);
+        const payload = await response.json();
+        // Support multiple API response shapes gracefully
+        const data = payload && payload.data ? payload.data : payload;
+        const devicesList = (data && (data.devices || data.items)) || [];
+        const pagination = (data && (data.pagination || data.meta)) || {};
+
+        // Derive totalPages with sensible defaults
+        const derivedTotalPages =
+          pagination.totalPages ??
+          pagination.total_pages ??
+          (pagination.total && pagination.limit
+            ? Math.ceil(pagination.total / pagination.limit)
+            : 1);
+
+        // Sanitize devices to ensure required client-side fields are safe
+        const sanitizedDevices: Device[] = Array.isArray(devicesList)
+          ? (devicesList as any[]).map((d: any) => ({
+              ...d,
+              images: Array.isArray(d?.images) ? d.images : [],
+            }))
+          : [];
+
+        setDevices(sanitizedDevices);
+        setTotalPages(
+          Number.isFinite(derivedTotalPages) && derivedTotalPages > 0
+            ? derivedTotalPages
+            : 1
+        );
       }
     } catch (error) {
       console.error("Error fetching devices:", error);
@@ -107,244 +132,248 @@ export default function DevicesPage() {
     }
   };
 
-  const uniqueBrands = Array.from(new Set(devices.map((d) => d.brand))).sort();
+  const uniqueBrands = Array.from(
+    new Set((Array.isArray(devices) ? devices : []).map((d) => d.brand))
+  ).sort();
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">My Devices</h1>
-          <p className="text-gray-600 mt-1">Manage your registered devices</p>
+    <main className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">My Devices</h1>
+            <p className="text-gray-600 mt-1">Manage your registered devices</p>
+          </div>
+          <div className="flex grid-cols-2 gap-2 relative ">
+            <Link href="/services/warranty-device-check">
+              <Button variant="outline" className="gap-2 ">
+                <Search className="h-4 w-4" />
+                Check Warranty
+              </Button>
+            </Link>
+            <Link href="/dashboard/devices/register">
+              <Button className="bg-orange-600 hover:bg-orange-700 gap-2 ">
+                <Plus className="h-4 w-4" />
+                <span className="hidden md:flex"> Register Device</span>
+              </Button>
+            </Link>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Link href="/services/warranty-device-check">
-            <Button variant="outline" className="gap-2">
-              <Search className="h-4 w-4" />
-              Check Warranty
-            </Button>
-          </Link>
-          <Link href="/dashboard/devices/register">
-            <Button className="bg-orange-600 hover:bg-orange-700 gap-2">
-              <Plus className="h-4 w-4" />
-              Register Device
-            </Button>
-          </Link>
-        </div>
-      </div>
 
-      {/* Filters */}
-      <Card className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              type="text"
-              placeholder="Search by brand, model..."
-              value={searchTerm}
+        {/* Filters */}
+        <Card className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Search by brand, model..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="pl-10"
+              />
+            </div>
+
+            {/* Device Type Filter */}
+            <select
+              value={selectedType}
               onChange={(e) => {
-                setSearchTerm(e.target.value);
+                setSelectedType(e.target.value);
                 setCurrentPage(1);
               }}
-              className="pl-10"
-            />
-          </div>
-
-          {/* Device Type Filter */}
-          <select
-            value={selectedType}
-            onChange={(e) => {
-              setSelectedType(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-          >
-            <option value="">All Device Types</option>
-            {DEVICE_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
-
-          {/* Brand Filter */}
-          <select
-            value={selectedBrand}
-            onChange={(e) => {
-              setSelectedBrand(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-          >
-            <option value="">All Brands</option>
-            {uniqueBrands.map((brand) => (
-              <option key={brand} value={brand}>
-                {brand}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Active Filters */}
-        {(searchTerm || selectedType || selectedBrand) && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {searchTerm && (
-              <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm">
-                Search: {searchTerm}
-              </span>
-            )}
-            {selectedType && (
-              <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                Type: {selectedType}
-              </span>
-            )}
-            {selectedBrand && (
-              <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
-                Brand: {selectedBrand}
-              </span>
-            )}
-            <button
-              onClick={() => {
-                setSearchTerm("");
-                setSelectedType("");
-                setSelectedBrand("");
-                setCurrentPage(1);
-              }}
-              className="text-sm text-gray-600 hover:text-gray-900 underline"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             >
-              Clear all
-            </button>
-          </div>
-        )}
-      </Card>
+              <option value="">All Device Types</option>
+              {DEVICE_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
 
-      {/* Device List */}
-      {loading ? (
-        <div className="text-center text-gray-600 py-12">
-          Loading devices...
-        </div>
-      ) : devices.length === 0 ? (
-        <Card className="p-12 text-center">
-          <Smartphone className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-          <h3 className="text-xl font-semibold mb-2">No devices found</h3>
-          <p className="text-gray-600 mb-6">
-            {searchTerm || selectedType || selectedBrand
-              ? "Try adjusting your filters"
-              : "You haven't registered any devices yet"}
-          </p>
-          <Link href="/dashboard/devices/register">
-            <Button className="bg-orange-600 hover:bg-orange-700">
-              Register Your First Device
-            </Button>
-          </Link>
-        </Card>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {devices.map((device) => (
-              <Card
-                key={device.id}
-                className="overflow-hidden hover:shadow-lg transition-shadow"
-              >
-                {/* Device Image */}
-                <div className="aspect-video bg-gray-100 relative">
-                  {device.images.length > 0 ? (
-                    <Image
-                      src={device.images[0]}
-                      alt={`${device.brand} ${device.model}`}
-                      fill
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <Smartphone className="h-12 w-12 text-gray-400" />
-                    </div>
-                  )}
-                  {device.images.length > 1 && (
-                    <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                      +{device.images.length - 1} more
-                    </div>
-                  )}
-                </div>
-
-                {/* Device Info */}
-                <div className="p-4">
-                  <h3 className="font-semibold text-lg mb-1">
-                    {device.brand} {device.model}
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-3">
-                    {device.deviceType}
-                    {device.color && ` • ${device.color}`}
-                  </p>
-
-                  {device.serialNumber && (
-                    <p className="text-xs text-gray-500 mb-1">
-                      S/N: {device.serialNumber}
-                    </p>
-                  )}
-                  {device.imei && (
-                    <p className="text-xs text-gray-500 mb-1">
-                      IMEI: {device.imei}
-                    </p>
-                  )}
-
-                  <p className="text-xs text-gray-500 mt-3">
-                    Registered:{" "}
-                    {new Date(device.createdAt).toLocaleDateString()}
-                  </p>
-
-                  {/* Actions */}
-                  <div className="flex gap-2 mt-4">
-                    <Link
-                      href={`/dashboard/devices/${device.id}`}
-                      className="flex-1"
-                    >
-                      <Button variant="outline" className="w-full gap-2">
-                        <Eye className="h-4 w-4" />
-                        View
-                      </Button>
-                    </Link>
-                    <Button
-                      variant="outline"
-                      onClick={() => handleDelete(device.id)}
-                      disabled={deleting === device.id}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            ))}
+            {/* Brand Filter */}
+            <select
+              value={selectedBrand}
+              onChange={(e) => {
+                setSelectedBrand(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            >
+              <option value="">All Brands</option>
+              {uniqueBrands.map((brand) => (
+                <option key={brand} value={brand}>
+                  {brand}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-2 mt-8">
-              <Button
-                variant="outline"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
+          {/* Active Filters */}
+          {(searchTerm || selectedType || selectedBrand) && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {searchTerm && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm">
+                  Search: {searchTerm}
+                </span>
+              )}
+              {selectedType && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                  Type: {selectedType}
+                </span>
+              )}
+              {selectedBrand && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                  Brand: {selectedBrand}
+                </span>
+              )}
+              <button
+                onClick={() => {
+                  setSearchTerm("");
+                  setSelectedType("");
+                  setSelectedBrand("");
+                  setCurrentPage(1);
+                }}
+                className="text-sm text-gray-600 hover:text-gray-900 underline"
               >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="text-sm text-gray-600">
-                Page {currentPage} of {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                onClick={() =>
-                  setCurrentPage((p) => Math.min(totalPages, p + 1))
-                }
-                disabled={currentPage === totalPages}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+                Clear all
+              </button>
             </div>
           )}
-        </>
-      )}
-    </div>
+        </Card>
+
+        {/* Device List */}
+        {loading ? (
+          <div className="text-center text-gray-600 py-12">
+            Loading devices...
+          </div>
+        ) : devices.length === 0 ? (
+          <Card className="p-12 text-center">
+            <Smartphone className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+            <h3 className="text-xl font-semibold mb-2">No devices found</h3>
+            <p className="text-gray-600 mb-6">
+              {searchTerm || selectedType || selectedBrand
+                ? "Try adjusting your filters"
+                : "You haven't registered any devices yet"}
+            </p>
+            <Link href="/dashboard/devices/register">
+              <Button className="bg-orange-600 hover:bg-orange-700">
+                Register Your First Device
+              </Button>
+            </Link>
+          </Card>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {devices.map((device) => (
+                <Card
+                  key={device.id}
+                  className="overflow-hidden hover:shadow-lg transition-shadow"
+                >
+                  {/* Device Image */}
+                  <div className="aspect-video bg-gray-100 relative">
+                    {device.images.length > 0 ? (
+                      <Image
+                        src={device.images[0]}
+                        alt={`${device.brand} ${device.model}`}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <Smartphone className="h-12 w-12 text-gray-400" />
+                      </div>
+                    )}
+                    {device.images.length > 1 && (
+                      <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                        +{device.images.length - 1} more
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Device Info */}
+                  <div className="p-4">
+                    <h3 className="font-semibold text-lg mb-1">
+                      {device.brand} {device.model}
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-3">
+                      {device.deviceType}
+                      {device.color && ` • ${device.color}`}
+                    </p>
+
+                    {device.serialNumber && (
+                      <p className="text-xs text-gray-500 mb-1">
+                        S/N: {device.serialNumber}
+                      </p>
+                    )}
+                    {device.imei && (
+                      <p className="text-xs text-gray-500 mb-1">
+                        IMEI: {device.imei}
+                      </p>
+                    )}
+
+                    <p className="text-xs text-gray-500 mt-3">
+                      Registered:{" "}
+                      {new Date(device.createdAt).toLocaleDateString()}
+                    </p>
+
+                    {/* Actions */}
+                    <div className="flex gap-2 mt-4">
+                      <Link
+                        href={`/dashboard/devices/${device.id}`}
+                        className="flex-1"
+                      >
+                        <Button variant="outline" className="w-full gap-2">
+                          <Eye className="h-4 w-4" />
+                          View
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="outline"
+                        onClick={() => handleDelete(device.id)}
+                        disabled={deleting === device.id}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2 mt-8">
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm text-gray-600">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </main>
   );
 }
