@@ -70,9 +70,15 @@ export default function DevicesPage() {
       if (response.ok) {
         const payload = await response.json();
         // Support multiple API response shapes gracefully
-        const data = payload && payload.data ? payload.data : payload;
-        const devicesList = (data && (data.devices || data.items)) || [];
-        const pagination = (data && (data.pagination || data.meta)) || {};
+        const data = payload?.data ?? payload;
+        const devicesList = Array.isArray(data)
+          ? data
+          : (data && (data.devices || data.items)) || [];
+        const pagination =
+          payload?.metadata?.pagination ||
+          payload?.metadata ||
+          payload?.meta ||
+          {};
 
         // Derive totalPages with sensible defaults
         const derivedTotalPages =
@@ -122,7 +128,9 @@ export default function DevicesPage() {
         setDevices(devices.filter((d) => d.id !== id));
       } else {
         const error = await response.json();
-        alert(error.error || "Failed to delete device");
+        alert(
+          error?.error?.message || error?.error || "Failed to delete device"
+        );
       }
     } catch (error) {
       console.error("Error deleting device:", error);

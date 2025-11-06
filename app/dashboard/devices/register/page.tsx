@@ -93,7 +93,8 @@ export default function RegisterDevicePage() {
         }
 
         const uploadData = await uploadResponse.json();
-        imageUrls = uploadData.data.urls;
+        // Our upload endpoint returns { data: { images: string[] } }
+        imageUrls = uploadData?.data?.images || [];
       }
 
       // Validate device data
@@ -123,7 +124,10 @@ export default function RegisterDevicePage() {
       }
 
       const result = await response.json();
-      router.push(`/dashboard/devices/${result.data.id}`);
+      // API returns { data: { device: { id, ... } } }
+      const newId = result?.data?.device?.id || result?.data?.id;
+      if (!newId) throw new Error("Device created but ID missing in response");
+      router.push(`/dashboard/devices/${newId}`);
     } catch (err) {
       if (err instanceof z.ZodError) {
         setError(err.errors[0].message);

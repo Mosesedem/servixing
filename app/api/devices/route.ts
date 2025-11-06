@@ -1,7 +1,11 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { asyncHandler } from "@/lib/middleware/error-handler";
-import { successResponse } from "@/lib/api-response";
+import {
+  successResponse,
+  paginatedResponse,
+  createdResponse,
+} from "@/lib/api-response";
 import { createDeviceSchema, deviceQuerySchema } from "@/lib/schemas/device";
 import { deviceService } from "@/lib/services/device.service";
 
@@ -31,8 +35,11 @@ export const GET = asyncHandler(async (req: Request) => {
     limit: Number(searchParams.get("limit")) || 10,
   });
 
-  return successResponse(result.devices, {
-    pagination: result.pagination,
+  // Return a standardized paginated response where `data` is the array of devices
+  return paginatedResponse(result.devices, {
+    page: result.pagination.page,
+    limit: result.pagination.limit,
+    total: result.pagination.total,
   });
 });
 
@@ -53,5 +60,6 @@ export const POST = asyncHandler(async (req: Request) => {
   const data = createDeviceSchema.parse(body);
 
   const device = await deviceService.createDevice(userId, data);
-  return successResponse({ device });
+  // Return 201 Created with consistent shape { device }
+  return createdResponse({ device });
 });

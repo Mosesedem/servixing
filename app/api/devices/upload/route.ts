@@ -33,13 +33,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (files.length > 5) {
+    if (files.length > 10) {
       return NextResponse.json(
         {
           success: false,
           error: {
             code: "VALIDATION_ERROR",
-            message: "Maximum 5 images allowed",
+            message: "Maximum 10 images allowed",
           },
         },
         { status: 400 }
