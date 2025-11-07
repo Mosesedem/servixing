@@ -158,6 +158,7 @@ export class WorkOrderService {
     filters?: {
       status?: string;
       paymentStatus?: string;
+      deviceId?: string;
       page?: number;
       limit?: number;
     }
@@ -174,6 +175,10 @@ export class WorkOrderService {
 
     if (filters?.paymentStatus) {
       where.paymentStatus = filters.paymentStatus;
+    }
+
+    if (filters?.deviceId) {
+      where.deviceId = filters.deviceId;
     }
 
     const [workOrders, total] = await Promise.all([

@@ -24,12 +24,14 @@ export const GET = asyncHandler(async (req: Request) => {
   const limit = Number(searchParams.get("limit")) || 10;
   const status = searchParams.get("status") ?? undefined;
   const paymentStatus = searchParams.get("paymentStatus") ?? undefined;
+  const deviceId = searchParams.get("deviceId") ?? undefined;
 
   const result = await workOrderService.getUserWorkOrders(userId, {
     page,
     limit,
     status,
     paymentStatus,
+    deviceId,
   });
 
   return successResponse(result.workOrders, { pagination: result.pagination });

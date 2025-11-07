@@ -32,12 +32,12 @@ declare module "next-auth/jwt" {
 }
 
 // Log auth configuration on startup (only in development)
-if (process.env.NODE_ENV === "development") {
-  console.log("=== AUTH CONFIG INITIALIZATION ===");
-  console.log("NEXTAUTH_SECRET exists:", !!process.env.NEXTAUTH_SECRET);
-  console.log("NEXTAUTH_URL:", process.env.NEXTAUTH_URL);
-  console.log("GOOGLE_CLIENT_ID exists:", !!process.env.GOOGLE_CLIENT_ID);
-}
+// if (process.env.NODE_ENV === "development") {
+//   console.log("=== AUTH CONFIG INITIALIZATION ===");
+//   console.log("NEXTAUTH_SECRET exists:", !!process.env.NEXTAUTH_SECRET);
+//   console.log("NEXTAUTH_URL:", process.env.NEXTAUTH_URL);
+//   console.log("GOOGLE_CLIENT_ID exists:", !!process.env.GOOGLE_CLIENT_ID);
+// }
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),

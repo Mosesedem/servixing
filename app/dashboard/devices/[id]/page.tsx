@@ -233,7 +233,9 @@ export default function DeviceDetailPage() {
 
         if (uploadResponse.ok) {
           const uploadData = await uploadResponse.json();
-          newImageUrls = uploadData.data.urls;
+          newImageUrls = uploadData.data?.urls || [];
+        } else {
+          throw new Error("Failed to upload images");
         }
       }
 
@@ -262,12 +264,17 @@ export default function DeviceDetailPage() {
 
       if (response.ok) {
         const result = await response.json();
-        setDevice(result.data);
+        const updatedDevice = result.data;
+        setDevice(updatedDevice);
         setEditMode(false);
         setFormData((prev) => ({ ...prev, newImages: [] }));
       } else {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update device");
+        throw new Error(
+          errorData.error?.message ||
+            errorData.error ||
+            "Failed to update device"
+        );
       }
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -430,7 +437,7 @@ export default function DeviceDetailPage() {
           {/* Image Gallery */}
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Images</h2>
-            {device.images.length > 0 ? (
+            {device.images?.length > 0 ? (
               <div className="space-y-4">
                 {/* Main Image */}
                 <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden relative">
@@ -506,7 +513,7 @@ export default function DeviceDetailPage() {
                   onChange={(files) =>
                     setFormData((prev) => ({ ...prev, newImages: files }))
                   }
-                  maxFiles={10 - device.images.length}
+                  maxFiles={10 - device.images?.length}
                   maxSize={5}
                   disabled={saving}
                 />

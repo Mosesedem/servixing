@@ -26,7 +26,7 @@ export const GET = asyncHandler(
 
     const { id } = await params;
     const device = await deviceService.getDeviceById(id, userId);
-    return successResponse({ device });
+    return successResponse(device);
   }
 );
 
@@ -54,7 +54,7 @@ export const PUT = asyncHandler(
 
     const { id } = await params;
     const device = await deviceService.updateDevice(id, userId, data);
-    return successResponse({ device });
+    return successResponse(device);
   }
 );
 
