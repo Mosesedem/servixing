@@ -148,7 +148,7 @@ export default function CreateWorkOrderPage() {
     }
   };
 
-  const selectedDevice = devices.find((d) => d.id === formData.deviceId);
+  const selectedDevice = devices?.find((d) => d.id === formData.deviceId);
 
   return (
     <div className="container max-w-4xl mx-auto py-8 px-4">
@@ -213,7 +213,7 @@ export default function CreateWorkOrderPage() {
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-6">Select Your Device</h2>
 
-            {devices.length === 0 ? (
+            {devices?.length === 0 ? (
               <div className="text-center py-12">
                 <Package2 className="h-16 w-16 mx-auto mb-4 text-gray-400" />
                 <h3 className="text-lg font-semibold mb-2">
@@ -230,7 +230,7 @@ export default function CreateWorkOrderPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {devices.map((device) => (
+                {devices?.map((device) => (
                   <label
                     key={device.id}
                     className={`flex items-center gap-4 p-4 border-2 rounded-lg cursor-pointer transition-all ${
