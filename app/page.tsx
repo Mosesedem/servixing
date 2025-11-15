@@ -110,7 +110,7 @@ export default function LandingPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button asChild size="lg" className="group">
-                <Link href="/support/create-ticket">
+                <Link href="/services/book">
                   Book a Repair
                   <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
@@ -242,7 +242,7 @@ export default function LandingPage() {
                 ))}
               </ul>
               <Button asChild size="lg">
-                <Link href="/support/create-ticket">
+                <Link href="/services/book">
                   Book Now
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Link>
@@ -805,7 +805,7 @@ export default function LandingPage() {
             size="lg"
             className="bg-white text-orange-600 hover:bg-gray-100 hover:text-orange-700 group shadow-2xl"
           >
-            <Link href="/support/create-ticket">
+            <Link href="/services/book">
               Get Started Now
               <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
