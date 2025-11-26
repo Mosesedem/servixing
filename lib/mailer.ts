@@ -56,7 +56,7 @@ export async function sendEmail(options: {
   }
 }
 
-export function buildRepairConfirmationEmail(params: {
+export function buildPartsRequestConfirmationEmail(params: {
   name: string;
   email: string;
   phone: string;
@@ -64,8 +64,9 @@ export function buildRepairConfirmationEmail(params: {
   brand: string;
   model?: string;
   serialNumber: string;
-  issue: string;
-  dropoffType: string;
+  partName: string;
+  quantity: number;
+  deliveryType: string;
   address?: {
     addressLine1?: string;
     addressLine2?: string;
@@ -78,8 +79,8 @@ export function buildRepairConfirmationEmail(params: {
   images?: string[];
 }) {
   const addressHtml =
-    params.dropoffType === "DISPATCH"
-      ? `<div style=\"margin-top:10px\"><strong>Pickup Address</strong><br/>${[
+    params.deliveryType === "DELIVERY"
+      ? `<div style=\"margin-top:10px\"><strong>Delivery Address</strong><br/>${[
           params.address?.addressLine1,
           params.address?.addressLine2,
           [params.address?.city, params.address?.state]
@@ -92,7 +93,7 @@ export function buildRepairConfirmationEmail(params: {
         ]
           .filter(Boolean)
           .join("<br/>")}</div>`
-      : `<div style=\"margin-top:10px\"><strong>Service Type:</strong> Drop-off at service center</div>`;
+      : `<div style=\"margin-top:10px\"><strong>Delivery Method:</strong> Pickup at service center</div>`;
 
   const imagesHtml = (params.images || [])
     .slice(0, 3)
@@ -112,15 +113,15 @@ export function buildRepairConfirmationEmail(params: {
 <html>
   <head>
     <meta charSet=\"utf-8\" />
-    <title>Repair Request Confirmation</title>
+    <title>Parts Request Confirmation</title>
   </head>
   <body style=\"font-family:Arial, sans-serif; color:#111;\">
     <div style=\"max-width:640px;margin:0 auto;padding:24px;border:1px solid #eee;border-radius:12px\">
-      <h2 style=\"margin-top:0;color:#111\">Repair Request Received</h2>
+      <h2 style=\"margin-top:0;color:#111\">Parts Request Received</h2>
       <p>Hi ${params.name || "there"},</p>
       <p>Thanks for choosing ${
         config.app.name
-      }. We've received your repair request. Our team will contact you shortly with a quote and next steps.</p>
+      }. We've received your parts request. Our team will contact you shortly with details and pricing.</p>
 
       <div style=\"background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:16px\">
         <div><strong>Contact</strong><br/>${params.name} — ${
@@ -131,9 +132,9 @@ export function buildRepairConfirmationEmail(params: {
         } ${params.deviceType} ${
     params.model ? `(${params.model})` : ""
   } with SN: ${params.serialNumber}</div>
-        <div style=\"margin-top:10px\"><strong>Issue</strong><br/>${
-          params.issue
-        }</div>
+        <div style=\"margin-top:10px\"><strong>Part Requested</strong><br/>${
+          params.partName
+        } (Quantity: ${params.quantity})</div>
         ${addressHtml}
         ${customerReqHtml}
       </div>

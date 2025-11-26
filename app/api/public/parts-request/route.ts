@@ -1,0 +1,359 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import { uploadMultipleImages } from "@/lib/cloudinary";
+import { createRateLimiter } from "@/lib/rate-limit";
+import config from "@/lib/config";
+import { sendEmail, buildPartsRequestConfirmationEmail } from "@/lib/mailer";
+import { UserRole } from "@prisma/client";
+
+/**
+ * POST /api/public/parts-request
+ * Accepts multipart/form-data with fields + up to 3 images.
+ * Rate-limited and unauthenticated.
+ */
+export async function POST(req: NextRequest) {
+  try {
+    // Rate limit by IP
+    const rl = createRateLimiter(5, "10 m");
+    if (rl) {
+      const ip = req.headers.get("x-forwarded-for") || "anonymous";
+      const { success } = await rl.limit(`public:parts:${ip}`);
+      if (!success) {
+        return NextResponse.json(
+          { error: { code: "RATE_LIMIT", message: "Too many requests" } },
+          { status: 429 }
+        );
+      }
+    }
+
+    const form = await req.formData();
+
+    // Extract core fields
+    const name = String(form.get("name") || "").trim();
+    const email = String(form.get("email") || "")
+      .trim()
+      .toLowerCase();
+    const phone = String(form.get("phone") || "").trim();
+    const deviceType = String(form.get("deviceType") || "").trim();
+    const brand = String(form.get("brand") || "").trim();
+    const model = String(form.get("model") || "").trim();
+    const serialNumber = String(form.get("serialNumber")).trim();
+    const partName = String(form.get("partName") || "").trim();
+    const quantity = parseInt(String(form.get("quantity") || "1"), 10);
+    const deliveryType = String(form.get("deliveryType") || "PICKUP").trim();
+
+    // Address
+    const addressLine1 = String(form.get("addressLine1") || "").trim();
+    const addressLine2 = String(form.get("addressLine2") || "").trim();
+    const city = String(form.get("city") || "").trim();
+    const state = String(form.get("state") || "").trim();
+    const postalCode = String(form.get("postalCode") || "").trim();
+    const landmark = String(form.get("landmark") || "").trim();
+
+    const customerRequest = String(form.get("customerRequest") || "").trim();
+
+    // Validate required
+    if (
+      !name ||
+      !email ||
+      !phone ||
+      !deviceType ||
+      !brand ||
+      !partName ||
+      !serialNumber
+    ) {
+      return NextResponse.json(
+        {
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Missing required fields",
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    if (deliveryType === "DELIVERY") {
+      if (!addressLine1 || !city || !state) {
+        return NextResponse.json(
+          {
+            error: {
+              code: "VALIDATION_ERROR",
+              message:
+                "Address line 1, city and state are required for delivery",
+            },
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Images validation & upload
+    const files = form.getAll("images").filter(Boolean) as File[];
+    if (files.length > 3) {
+      return NextResponse.json(
+        { error: { code: "VALIDATION_ERROR", message: "Maximum 3 images" } },
+        { status: 400 }
+      );
+    }
+
+    for (const file of files) {
+      const allowed = config.upload.allowedImageTypes as readonly string[];
+      if (!allowed.includes(file.type)) {
+        return NextResponse.json(
+          {
+            error: {
+              code: "INVALID_FILE_TYPE",
+              message: "Only image files are allowed",
+            },
+          },
+          { status: 400 }
+        );
+      }
+      if (file.size > config.upload.maxFileSize) {
+        return NextResponse.json(
+          {
+            error: {
+              code: "FILE_TOO_LARGE",
+              message: `Each image must be ${(
+                config.upload.maxFileSize /
+                (1024 * 1024)
+              ).toFixed(0)}MB or smaller`,
+            },
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Convert to base64 & upload
+    let imageUrls: string[] = [];
+    if (files.length) {
+      const imageDataURIs = await Promise.all(
+        files.map(async (file) => {
+          const bytes = await file.arrayBuffer();
+          const base64 = Buffer.from(bytes).toString("base64");
+          return `data:${file.type};base64,${base64}`;
+        })
+      );
+
+      const folder = `servixing/public/${new Date()
+        .toISOString()
+        .slice(0, 10)}`;
+      const results = await uploadMultipleImages(imageDataURIs, {
+        folder,
+        tags: ["public", "parts"],
+      });
+      imageUrls = results.map((r) => r.secure_url);
+    }
+
+    // Find or create user by email
+    let user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email,
+          name: name || null,
+          phone: phone || null,
+          role: UserRole.CUSTOMER,
+        },
+      });
+    }
+
+    // Compose metadata
+    const metadata = {
+      contact: { name, email, phone },
+      device: { deviceType, brand, model, serialNumber },
+      part: { partName, quantity },
+      deliveryType,
+      address:
+        deliveryType === "DELIVERY"
+          ? { addressLine1, addressLine2, city, state, postalCode, landmark }
+          : null,
+      customerRequest: customerRequest || null,
+      images: imageUrls,
+      submittedAt: new Date().toISOString(),
+      source: "public_parts_form",
+    };
+
+    // Build description markdown for staff
+    const addressText =
+      deliveryType === "DELIVERY"
+        ? [
+            addressLine1,
+            addressLine2,
+            `${city}${state ? ", " + state : ""}`,
+            postalCode,
+            landmark ? `Landmark: ${landmark}` : "",
+          ]
+            .filter(Boolean)
+            .join("\n")
+        : "Pickup at service center";
+
+    const description = `
+**Customer Details:**
+- Name: ${name}
+- Email: ${email}
+- Phone: ${phone}
+
+**Device Information:**
+- Type: ${deviceType}
+- Brand: ${brand}
+- Model: ${model || "Not specified"}
+- Serial Number: ${serialNumber}
+
+**Part Requested:**
+- Part: ${partName}
+- Quantity: ${quantity}
+
+**Delivery Method:**
+${
+  deliveryType === "PICKUP"
+    ? "Pickup at service center"
+    : `Delivery to:\n${addressText}`
+}
+
+${
+  customerRequest
+    ? `\n**Customer Request (Optional):**\n${customerRequest}`
+    : ""
+}
+
+${
+  imageUrls.length
+    ? `\n**Attached Images:**\n${imageUrls
+        .map((u, i) => `![Image ${i + 1}](${u})`)
+        .join("\n")}`
+    : ""
+}
+    `;
+
+    // Create ticket
+    const ticket = await prisma.supportTicket.create({
+      data: {
+        userId: user.id,
+        title: `Parts Purchase Request: ${partName}`,
+        description,
+        priority: "normal",
+        metadata,
+      } as any,
+    });
+
+    // Store images as TicketMessage attachments for better rendering
+    if (imageUrls.length) {
+      await prisma.ticketMessage.create({
+        data: {
+          ticketId: ticket.id,
+          userId: user.id,
+          message: "Images attached with parts request.",
+          attachments: imageUrls,
+        },
+      });
+    }
+
+    // Send confirmation emails (user + admin)
+    const userHtml = buildPartsRequestConfirmationEmail({
+      name,
+      email,
+      phone,
+      deviceType,
+      brand,
+      model,
+      serialNumber,
+      partName,
+      quantity,
+      deliveryType,
+      address: {
+        addressLine1,
+        addressLine2,
+        city,
+        state,
+        postalCode,
+        landmark,
+      },
+      customerRequest,
+      images: imageUrls,
+    });
+
+    await sendEmail({
+      to: email,
+      subject: "Your parts request has been received",
+      html: userHtml,
+      userIdForLog: user.id,
+    });
+
+    // Admin email (summarized)
+    const adminHtml = `<!doctype html><html><body style=\"font-family:Arial\">\
+      <h3>New Parts Request</h3>\
+      <p><strong>${name}</strong> (${email} — ${phone}) submitted a parts request.</p>\
+      <p><strong>Device:</strong> ${brand} ${deviceType}  ${
+      model ? `(${model})` : ""
+    } with SN:${serialNumber}</p>\
+      <p><strong>Part:</strong> ${partName} (Qty: ${quantity})</p>\
+      <p><strong>Delivery:</strong> ${deliveryType}</p>\
+      ${
+        deliveryType === "DELIVERY"
+          ? `<p><strong>Delivery Address:</strong><br/>${addressText.replace(
+              /\n/g,
+              "<br/>"
+            )}</p>`
+          : ""
+      }\
+      ${
+        customerRequest
+          ? `<p><strong>Customer Request:</strong><br/>${customerRequest.replace(
+              /\n/g,
+              "<br/>"
+            )}</p>`
+          : ""
+      }\
+      <p><a href=\"${config.app.url}/admin\">View in Admin</a></p>\
+    </body></html>`;
+
+    await sendEmail({
+      to: config.email.adminEmail,
+      subject: `New Parts Request from ${name || email}`,
+      html: adminHtml,
+      skipLog: true,
+    });
+
+    // Log admin email status under an admin/system user when available
+    try {
+      const adminUser = await prisma.user.findUnique({
+        where: { email: config.email.adminEmail },
+        select: { id: true },
+      });
+      if (adminUser) {
+        await prisma.notificationLog.create({
+          data: {
+            userId: adminUser.id,
+            type: "email",
+            subject: `New Parts Request from ${name || email}`,
+            content: `Admin notification sent to ${config.email.adminEmail}`,
+            status: "sent",
+            sentAt: new Date(),
+          },
+        });
+      }
+    } catch (e) {
+      console.error("Failed to log admin email notification:", e);
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: { ticketId: ticket.id, images: imageUrls },
+    });
+  } catch (error) {
+    console.error("Public parts request error:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: {
+          code: "INTERNAL_ERROR",
+          message: "Failed to submit parts request",
+        },
+      },
+      { status: 500 }
+    );
+  }
+}
