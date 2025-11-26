@@ -313,7 +313,9 @@ export default function AdminSupportQueuePage() {
                               <Checkbox
                                 id="sendEmail"
                                 checked={sendEmail}
-                                onCheckedChange={setSendEmail}
+                                onCheckedChange={(checked) =>
+                                  setSendEmail(checked === true)
+                                }
                               />
                               <label
                                 htmlFor="sendEmail"

@@ -32,7 +32,7 @@ export async function GET() {
       totalUsers,
       totalWorkOrders,
       completedOrders,
-      totalRevenue: totalRevenue._sum.finalCost || 0,
+      totalRevenue: Number(totalRevenue._sum.finalCost || 0),
       pendingPayments,
     });
   } catch (error) {

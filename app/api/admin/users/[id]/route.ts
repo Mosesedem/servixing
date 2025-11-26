@@ -82,7 +82,7 @@ export async function PATCH(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -92,7 +92,7 @@ export async function DELETE(
     }
 
     const { sendEmail: shouldSendEmail } = await req.json();
-    const userId = params.id;
+    const userId = (await params).id;
 
     // Get user info before deletion
     const user = await prisma.user.findUnique({
