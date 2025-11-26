@@ -7,7 +7,7 @@ import { NextResponse } from "next/server";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -17,7 +17,7 @@ export async function PATCH(
     }
 
     const { role, sendEmail: shouldSendEmail } = await req.json();
-    const userId = params.id;
+    const userId = (await params).id;
 
     if (!role) {
       return NextResponse.json({ error: "Role is required" }, { status: 400 });
