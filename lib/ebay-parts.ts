@@ -37,7 +37,7 @@ function get<T = any>(obj: any, path: Array<string | number>, fallback: T): T {
   try {
     let cur = obj;
     for (const key of path) cur = cur?.[key];
-    return (Array.isArray(cur) ? cur[0] : cur) ?? fallback;
+    return cur ?? fallback;
   } catch {
     return fallback;
   }
@@ -77,6 +77,12 @@ export async function searchParts(
     );
     return { items: [], total: 0, page: 1, perPage: 24 };
   }
+
+  const environment = process.env.EBAY_ENVIRONMENT || "PRODUCTION";
+  const baseUrl =
+    environment === "SANDBOX"
+      ? "https://svcs.sandbox.ebay.com"
+      : "https://svcs.ebay.com";
 
   // Build keywords by combining brand and query for better relevance
   const keywords = `${brand} ${query}`.trim();
@@ -136,7 +142,7 @@ export async function searchParts(
   if (typeof options.maxPrice === "number")
     addFilter("MaxPrice", String(options.maxPrice));
 
-  const endpoint = `https://svcs.ebay.com/services/search/FindingService/v1?${params.toString()}`;
+  const endpoint = `${baseUrl}/services/search/FindingService/v1?${params.toString()}`;
 
   try {
     const res = await fetch(endpoint, { next: { revalidate: 0 } });
