@@ -53,7 +53,7 @@ export default function CreateWorkOrderPage() {
       const response = await fetch("/api/devices?limit=100");
       if (response.ok) {
         const result = await response.json();
-        setDevices(result.data.devices);
+        setDevices(result.data);
       }
     } catch (error) {
       console.error("Error fetching devices:", error);
