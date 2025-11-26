@@ -660,12 +660,23 @@ ${
         )}
 
         {!loading && searched && parts.length === 0 && (
-          <div className="text-center py-12">
+          <div className="text-center py-12 flex flex-col items-center ">
             <Package className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
             <h3 className="text-xl font-semibold mb-2">No parts found</h3>
             <p className="text-muted-foreground">
               Try adjusting your search terms or selecting a different brand.
             </p>
+            <div className="pt-20">
+              <button
+                onClick={() => setRequestOpen(true)}
+                className="justify-center bg-orange-600 text-white p-4 rounded-full shadow-lg hover:bg-orange-700 z-40 flex items-center gap-2"
+                aria-label="Request for Parts"
+                hidden={requestOpen}
+              >
+                <Package className="h-6 w-6" />
+                <span className="">Request for Parts</span>
+              </button>
+            </div>
           </div>
         )}
 
