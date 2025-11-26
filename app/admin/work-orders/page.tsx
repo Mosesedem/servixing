@@ -5,6 +5,15 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface WorkOrder {
   id: string;
@@ -23,45 +32,75 @@ export default function AdminWorkOrders() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("");
+  const [editingOrder, setEditingOrder] = useState<WorkOrder | null>(null);
+  const [sendEmail, setSendEmail] = useState(true);
+  const [notes, setNotes] = useState("");
+  const [finalCost, setFinalCost] = useState("");
 
   useEffect(() => {
-    const fetchWorkOrders = async () => {
-      try {
-        let url = "/api/admin/work-orders";
-        const params = new URLSearchParams();
-        if (statusFilter) params.append("status", statusFilter);
-        if (paymentFilter) params.append("paymentStatus", paymentFilter);
-        if (params.toString()) url += "?" + params.toString();
-
-        const response = await fetch(url);
-        if (response.ok) {
-          const data = await response.json();
-          setWorkOrders(data);
-        }
-      } catch (error) {
-        console.error(" Error fetching work orders:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchWorkOrders();
   }, [statusFilter, paymentFilter]);
 
+  const fetchWorkOrders = async () => {
+    try {
+      let url = "/api/admin/work-orders";
+      const params = new URLSearchParams();
+      if (statusFilter) params.append("status", statusFilter);
+      if (paymentFilter) params.append("paymentStatus", paymentFilter);
+      if (params.toString()) url += "?" + params.toString();
+
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        setWorkOrders(data);
+      }
+    } catch (error) {
+      console.error(" Error fetching work orders:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStatusUpdate = async (orderId: string, newStatus: string) => {
+    try {
+      const response = await fetch("/api/admin/work-orders", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workOrderId: orderId,
+          status: newStatus,
+          notes: notes || undefined,
+          finalCost: finalCost ? parseFloat(finalCost) : undefined,
+          sendEmail,
+        }),
+      });
+      if (response.ok) {
+        fetchWorkOrders();
+        setEditingOrder(null);
+        setNotes("");
+        setFinalCost("");
+      }
+    } catch (error) {
+      console.error("Error updating work order:", error);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "created":
+      case "CREATED":
         return "bg-gray-100 text-gray-800";
-      case "dropped_off":
+      case "ACCEPTED":
         return "bg-blue-100 text-blue-800";
-      case "diagnosed":
+      case "IN_REPAIR":
         return "bg-purple-100 text-purple-800";
-      case "in_progress":
+      case "AWAITING_PARTS":
         return "bg-orange-100 text-orange-800";
-      case "completed":
-        return "bg-green-100 text-green-800";
-      case "ready_for_pickup":
+      case "READY_FOR_PICKUP":
         return "bg-emerald-100 text-emerald-800";
+      case "COMPLETED":
+        return "bg-green-100 text-green-800";
+      case "CANCELLED":
+        return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -69,12 +108,12 @@ export default function AdminWorkOrders() {
 
   const getPaymentColor = (status: string) => {
     switch (status) {
-      case "completed":
+      case "PAID":
         return "text-green-600";
-      case "failed":
+      case "FAILED":
         return "text-red-600";
-      case "initiated":
-        return "text-blue-600";
+      case "PENDING":
+        return "text-yellow-600";
       default:
         return "text-yellow-600";
     }
@@ -95,20 +134,21 @@ export default function AdminWorkOrders() {
       <div className="flex gap-4 mb-6">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <option value="">All Statuses</option>
-          <option value="created">Created</option>
-          <option value="dropped_off">Dropped Off</option>
-          <option value="diagnosed">Diagnosed</option>
-          <option value="in_progress">In Progress</option>
-          <option value="completed">Completed</option>
-          <option value="ready_for_pickup">Ready for Pickup</option>
+          <option value="CREATED">Created</option>
+          <option value="ACCEPTED">Accepted</option>
+          <option value="IN_REPAIR">In Repair</option>
+          <option value="AWAITING_PARTS">Awaiting Parts</option>
+          <option value="READY_FOR_PICKUP">Ready for Pickup</option>
+          <option value="COMPLETED">Completed</option>
+          <option value="CANCELLED">Cancelled</option>
         </Select>
 
         <Select value={paymentFilter} onValueChange={setPaymentFilter}>
           <option value="">All Payments</option>
-          <option value="pending">Pending</option>
-          <option value="initiated">Initiated</option>
-          <option value="completed">Completed</option>
-          <option value="failed">Failed</option>
+          <option value="PENDING">Pending</option>
+          <option value="PAID">Paid</option>
+          <option value="FAILED">Failed</option>
+          <option value="REFUNDED">Refunded</option>
         </Select>
       </div>
 
@@ -163,11 +203,116 @@ export default function AdminWorkOrders() {
                     )}
                   </div>
                 </div>
-                <Link href={`/admin/work-orders/${order.id}`}>
-                  <Button variant="outline" size="sm">
-                    View
-                  </Button>
-                </Link>
+                <div className="flex gap-2">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingOrder(order)}
+                      >
+                        Update Status
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Update Work Order Status</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">
+                            New Status
+                          </label>
+                          <Select
+                            value={editingOrder?.status || ""}
+                            onValueChange={(value) =>
+                              setEditingOrder(
+                                editingOrder
+                                  ? { ...editingOrder, status: value }
+                                  : null
+                              )
+                            }
+                          >
+                            <option value="CREATED">Created</option>
+                            <option value="ACCEPTED">Accepted</option>
+                            <option value="IN_REPAIR">In Repair</option>
+                            <option value="AWAITING_PARTS">
+                              Awaiting Parts
+                            </option>
+                            <option value="READY_FOR_PICKUP">
+                              Ready for Pickup
+                            </option>
+                            <option value="COMPLETED">Completed</option>
+                            <option value="CANCELLED">Cancelled</option>
+                          </Select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">
+                            Final Cost (optional)
+                          </label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={finalCost}
+                            onChange={(e) => setFinalCost(e.target.value)}
+                            placeholder="Enter final cost"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">
+                            Notes (optional)
+                          </label>
+                          <Input
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            placeholder="Add notes"
+                          />
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="sendEmail"
+                            checked={sendEmail}
+                            onCheckedChange={setSendEmail}
+                          />
+                          <label
+                            htmlFor="sendEmail"
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            Send email notification to customer
+                          </label>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() =>
+                              editingOrder &&
+                              handleStatusUpdate(
+                                editingOrder.id,
+                                editingOrder.status
+                              )
+                            }
+                          >
+                            Update Status
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setEditingOrder(null);
+                              setNotes("");
+                              setFinalCost("");
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                  <Link href={`/admin/work-orders/${order.id}`}>
+                    <Button variant="outline" size="sm">
+                      View Details
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </Card>
           ))}

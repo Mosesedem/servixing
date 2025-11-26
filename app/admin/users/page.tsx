@@ -2,6 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Trash2, Edit, Mail } from "lucide-react";
 
 interface User {
   id: string;
@@ -17,24 +29,58 @@ interface User {
 export default function AdminUsers() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [sendEmail, setSendEmail] = useState(true);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await fetch("/api/admin/users");
-        if (response.ok) {
-          const data = await response.json();
-          setUsers(data);
-        }
-      } catch (error) {
-        console.error(" Error fetching users:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUsers();
   }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch("/api/admin/users");
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data);
+      }
+    } catch (error) {
+      console.error(" Error fetching users:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRoleChange = async (userId: string, newRole: string) => {
+    try {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: newRole, sendEmail }),
+      });
+      if (response.ok) {
+        fetchUsers();
+        setEditingUser(null);
+      }
+    } catch (error) {
+      console.error("Error updating role:", error);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm("Are you sure you want to delete this user?")) return;
+    try {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sendEmail }),
+      });
+      if (response.ok) {
+        fetchUsers();
+      }
+    } catch (error) {
+      console.error("Error deleting user:", error);
+    }
+  };
 
   return (
     <div>
@@ -59,6 +105,7 @@ export default function AdminUsers() {
                 <th className="text-center p-3 font-semibold">Devices</th>
                 <th className="text-center p-3 font-semibold">Orders</th>
                 <th className="text-left p-3 font-semibold">Joined</th>
+                <th className="text-center p-3 font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -82,6 +129,88 @@ export default function AdminUsers() {
                   </td>
                   <td className="p-3 text-muted-foreground">
                     {new Date(user.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="p-3 text-center">
+                    <div className="flex gap-2 justify-center">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditingUser(user)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Edit User Role</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium mb-2">
+                                New Role
+                              </label>
+                              <Select
+                                value={editingUser?.role || ""}
+                                onValueChange={(value) =>
+                                  setEditingUser(
+                                    editingUser
+                                      ? { ...editingUser, role: value }
+                                      : null
+                                  )
+                                }
+                              >
+                                <option value="CUSTOMER">Customer</option>
+                                <option value="TECHNICIAN">Technician</option>
+                                <option value="ADMIN">Admin</option>
+                                <option value="SUPER_ADMIN">Super Admin</option>
+                              </Select>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="sendEmail"
+                                checked={sendEmail}
+                                onCheckedChange={setSendEmail}
+                              />
+                              <label
+                                htmlFor="sendEmail"
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                              >
+                                Send email notification to user
+                              </label>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                onClick={() =>
+                                  editingUser &&
+                                  handleRoleChange(
+                                    editingUser.id,
+                                    editingUser.role
+                                  )
+                                }
+                              >
+                                Update Role
+                              </Button>
+                              <Button
+                                variant="outline"
+                                onClick={() => setEditingUser(null)}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteUser(user.id)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}

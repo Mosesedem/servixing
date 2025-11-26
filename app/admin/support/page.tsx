@@ -7,6 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { LoadingSpinner } from "@/components/loading-spinner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Edit, MessageSquare } from "lucide-react";
 
 interface TicketRow {
   id: string;
@@ -27,6 +36,9 @@ export default function AdminSupportQueuePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
   const [rows, setRows] = useState<TicketRow[]>([]);
+  const [editingTicket, setEditingTicket] = useState<TicketRow | null>(null);
+  const [sendEmail, setSendEmail] = useState(true);
+  const [notes, setNotes] = useState("");
 
   const [q, setQ] = useState(params.get("q") || "");
   const [status, setStatus] = useState(params.get("status") || "");
@@ -83,6 +95,27 @@ export default function AdminSupportQueuePage() {
     }
   }
 
+  const handleStatusUpdate = async (ticketId: string, newStatus: string) => {
+    try {
+      const res = await fetch(`/api/admin/support/tickets/${ticketId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: newStatus,
+          notes,
+          sendEmail,
+        }),
+      });
+      if (res.ok) {
+        load();
+        setEditingTicket(null);
+        setNotes("");
+      }
+    } catch (err) {
+      console.error("Failed to update ticket:", err);
+    }
+  };
+
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -90,7 +123,7 @@ export default function AdminSupportQueuePage() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Support Queue</h1>
+      <h1 className="text-2xl font-bold">Support Queue Management</h1>
       <Card className="p-4 space-y-3">
         <div className="grid md:grid-cols-4 gap-3">
           <Input
@@ -202,6 +235,7 @@ export default function AdminSupportQueuePage() {
                 <th className="px-4 py-2">Priority</th>
                 <th className="px-4 py-2">Status</th>
                 <th className="px-4 py-2">Images</th>
+                <th className="px-4 py-2">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -228,13 +262,103 @@ export default function AdminSupportQueuePage() {
                   <td className="px-4 py-2">{r.priority}</td>
                   <td className="px-4 py-2">{r.status}</td>
                   <td className="px-4 py-2">{r.imagesCount}</td>
+                  <td className="px-4 py-2">
+                    <div className="flex gap-2">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditingTicket(r)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Update Ticket Status</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium mb-2">
+                                New Status
+                              </label>
+                              <Select
+                                value={editingTicket?.status || ""}
+                                onValueChange={(value) =>
+                                  setEditingTicket(
+                                    editingTicket
+                                      ? { ...editingTicket, status: value }
+                                      : null
+                                  )
+                                }
+                              >
+                                <option value="OPEN">Open</option>
+                                <option value="IN_PROGRESS">In Progress</option>
+                                <option value="PENDING">Pending</option>
+                                <option value="CLOSED">Closed</option>
+                              </Select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-2">
+                                Notes (optional)
+                              </label>
+                              <Input
+                                value={notes}
+                                onChange={(e) => setNotes(e.target.value)}
+                                placeholder="Add notes"
+                              />
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="sendEmail"
+                                checked={sendEmail}
+                                onCheckedChange={setSendEmail}
+                              />
+                              <label
+                                htmlFor="sendEmail"
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                              >
+                                Send email notification to customer
+                              </label>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                onClick={() =>
+                                  editingTicket &&
+                                  handleStatusUpdate(
+                                    editingTicket.id,
+                                    editingTicket.status
+                                  )
+                                }
+                              >
+                                Update Status
+                              </Button>
+                              <Button
+                                variant="outline"
+                                onClick={() => {
+                                  setEditingTicket(null);
+                                  setNotes("");
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                      <Button variant="outline" size="sm">
+                        <MessageSquare className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </td>
                 </tr>
               ))}
               {rows.length === 0 && !loading && (
                 <tr>
                   <td
                     className="px-4 py-6 text-center text-muted-foreground"
-                    colSpan={8}
+                    colSpan={9}
                   >
                     No tickets found
                   </td>
