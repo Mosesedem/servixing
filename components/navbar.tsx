@@ -27,6 +27,8 @@ import {
   Headset,
   LogOut,
   User,
+  UserCog2,
+  UserCog,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
@@ -252,6 +254,16 @@ export function Navbar() {
                   </DropdownMenu.Content>
                 </DropdownMenu.Portal>
               </DropdownMenu.Root>
+
+              <Link
+                href="/about-us"
+                className={`nav-link px-3 py-2 text-sm font-medium rounded-lg ${
+                  isActive("/about-us") ? "active" : "text-muted-foreground"
+                }`}
+              >
+                <UserCog className="h-4 w-4" />
+                <span>About Us</span>
+              </Link>
             </div>
 
             {/* Desktop Auth */}
@@ -399,6 +411,13 @@ export function Navbar() {
               >
                 <Shield className="h-6 w-6" />
                 <span className="text-xs text-center">Warranty Check</span>
+              </Link>
+              <Link
+                href="/about-us"
+                className="flex flex-col items-center gap-2 px-3 py-3 text-sm font-medium rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all duration-300"
+              >
+                <UserCog className="h-6 w-6" />
+                <span className="text-xs text-center">About Us</span>
               </Link>
             </div>
           </div>

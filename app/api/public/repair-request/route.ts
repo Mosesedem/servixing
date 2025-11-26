@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
     const model = String(form.get("model") || "").trim();
     const serialNumber = String(form.get("serialNumber")).trim();
     const issue = String(form.get("issue") || "").trim();
+    const problemType = String(form.get("problemType") || "").trim();
     const dropoffType = String(form.get("dropoffType") || "DROPOFF").trim();
 
     // Address
@@ -173,6 +174,7 @@ export async function POST(req: NextRequest) {
       contact: { name, email, phone },
       device: { deviceType, brand, model, serialNumber },
       issue,
+      problemType: problemType || null,
       dropoffType,
       address:
         dropoffType === "DISPATCH"
@@ -209,6 +211,9 @@ export async function POST(req: NextRequest) {
 - Brand: ${brand}
 - Model: ${model || "Not specified"}
 - serial Number: ${serialNumber}
+
+**Problem Type:**
+${problemType || "Not specified"}
 
 **Issue Description:**
 ${issue}

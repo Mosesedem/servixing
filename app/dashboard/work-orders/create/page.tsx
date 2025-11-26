@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { ArrowLeft, Loader2, Package2 } from "lucide-react";
 import Link from "next/link";
 import { createWorkOrderSchema } from "@/lib/schemas/work-order";
+import { PROBLEM_TYPES } from "@/lib/utils";
 import { z } from "zod";
 
 interface Device {
@@ -31,6 +32,7 @@ export default function CreateWorkOrderPage() {
   const [formData, setFormData] = useState({
     deviceId: preselectedDeviceId || "",
     issueDescription: "",
+    problemType: "",
     dropoffType: "DROPOFF" as "DROPOFF" | "DISPATCH",
     warrantyDecision: "skipped" as "requested" | "skipped" | "requested_paid",
     dispatchAddress: {
@@ -108,6 +110,7 @@ export default function CreateWorkOrderPage() {
       const submitData: any = {
         deviceId: formData.deviceId,
         issueDescription: formData.issueDescription,
+        problemType: formData.problemType || undefined,
         dropoffType: formData.dropoffType,
         warrantyDecision: formData.warrantyDecision,
       };
@@ -292,6 +295,26 @@ export default function CreateWorkOrderPage() {
                 </p>
               </div>
             )}
+
+            <div className="space-y-2">
+              <label htmlFor="problemType" className="text-sm font-medium">
+                Problem Type
+              </label>
+              <select
+                id="problemType"
+                name="problemType"
+                value={formData.problemType}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-transparent"
+              >
+                <option value="">Select problem type (optional)</option>
+                {PROBLEM_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             <div className="space-y-2">
               <label htmlFor="issueDescription" className="text-sm font-medium">

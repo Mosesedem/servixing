@@ -521,7 +521,7 @@ export default function PartsSearchPage() {
         )}
 
         {/* Info Section */}
-        <div className="mt-16 grid md:grid-cols-3 gap-6">
+        {/* <div className="mt-16 grid md:grid-cols-3 gap-6">
           <Card className="p-6 text-center">
             <Package className="h-12 w-12 mx-auto mb-3 text-orange-600" />
             <h3 className="font-semibold mb-2">Genuine Parts</h3>
@@ -543,7 +543,7 @@ export default function PartsSearchPage() {
               Compare prices from trusted sellers to get the best deals
             </p>
           </Card>
-        </div>
+        </div> */}
       </div>
 
       {/* Preview Sheet/Drawer */}

@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ImageUpload } from "@/components/image-upload";
 import { LoadingSpinner } from "@/components/loading-spinner";
+import { PROBLEM_TYPES } from "@/lib/utils";
 import {
   ArrowLeft,
   CheckCircle,
@@ -37,6 +38,7 @@ export default function BookRepairPage() {
     model: "",
     serialNumber: "",
     issue: "",
+    problemType: "",
     dropoffType: "DROPOFF" as "DROPOFF" | "DISPATCH",
     // Structured address fields for better detail
     addressLine1: "",
@@ -187,6 +189,9 @@ export default function BookRepairPage() {
 - Brand: ${formData.brand}
 - Model: ${formData.model || "Not specified"}
 
+**Problem Type:**
+${formData.problemType || "Not specified"}
+
 **Issue Description:**
 ${formData.issue}
 
@@ -225,6 +230,7 @@ ${
                 serialNumber: formData.serialNumber,
               },
               issue: formData.issue,
+              problemType: formData.problemType || null,
               dropoffType: formData.dropoffType,
               address:
                 formData.dropoffType === "DISPATCH"
@@ -284,6 +290,7 @@ ${
         fd.set("model", formData.model || "");
         fd.set("serialNumber", formData.serialNumber);
         fd.set("issue", formData.issue);
+        fd.set("problemType", formData.problemType || "");
         fd.set("dropoffType", formData.dropoffType);
         if (formData.dropoffType === "DISPATCH") {
           fd.set("addressLine1", formData.addressLine1);
@@ -407,7 +414,7 @@ ${
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Trust Indicators */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
+        {/* <div className="grid md:grid-cols-3 gap-6 mb-8">
           <Card className="p-6 text-center">
             <CheckCircle className="h-12 w-12 mx-auto mb-3 text-green-600" />
             <h3 className="font-semibold mb-2">Free Diagnostics</h3>
@@ -429,7 +436,7 @@ ${
               All repairs backed by our comprehensive warranty
             </p>
           </Card>
-        </div>
+        </div> */}
 
         {/* Form Card */}
         <Card className="p-6 sm:p-8">
@@ -587,6 +594,26 @@ ${
                   />
                 </div>
               </div>
+            </div>
+            {/* Problem Type */}
+            <div className="space-y-2">
+              <label htmlFor="problemType" className="text-sm font-medium">
+                Problem Type
+              </label>
+              <select
+                id="problemType"
+                name="problemType"
+                value={formData.problemType}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-600"
+              >
+                <option value="">Select problem type (optional)</option>
+                {PROBLEM_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
             </div>
             {/* Issue Description */}
             <div className="space-y-2">

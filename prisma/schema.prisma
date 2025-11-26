@@ -211,6 +211,7 @@ model WorkOrder {
   // Status and workflow
   status           WorkOrderStatus @default(CREATED)
   issueDescription String          @db.Text
+  problemType      String? // Selected problem category from dropdown
 
   // Service type
   dropoffType     DropoffType

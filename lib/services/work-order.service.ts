@@ -28,6 +28,7 @@ export class WorkOrderService {
     data: {
       deviceId: string;
       issueDescription: string;
+      problemType?: string;
       dropoffType: string;
       dispatchAddress?: any;
       warrantyDecision?: string;
@@ -76,6 +77,7 @@ export class WorkOrderService {
         userId,
         deviceId: data.deviceId,
         issueDescription: data.issueDescription,
+        problemType: data.problemType || null,
         dropoffType: data.dropoffType as any,
         dispatchAddress: data.dispatchAddress || null,
         dispatchFee,

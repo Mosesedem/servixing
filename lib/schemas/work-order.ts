@@ -21,6 +21,7 @@ export const createWorkOrderSchema = z
       .string()
       .min(10, "Issue description must be at least 10 characters")
       .max(2000, "Issue description is too long"),
+    problemType: z.string().optional(), // Selected problem category
     dropoffType: z.enum(["DROPOFF", "DISPATCH"]),
     dispatchAddress: addressSchema.optional(),
     warrantyDecision: z
