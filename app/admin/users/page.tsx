@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Trash2, Edit, Mail } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 interface User {
   id: string;
@@ -31,6 +32,9 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [sendEmail, setSendEmail] = useState(true);
+  const { data: session } = useSession();
+
+  const isSuperAdmin = session?.user?.role === "SUPER_ADMIN";
 
   useEffect(() => {
     fetchUsers();
@@ -164,7 +168,11 @@ export default function AdminUsers() {
                                 <option value="CUSTOMER">Customer</option>
                                 <option value="TECHNICIAN">Technician</option>
                                 <option value="ADMIN">Admin</option>
-                                <option value="SUPER_ADMIN">Super Admin</option>
+                                {isSuperAdmin && (
+                                  <option value="SUPER_ADMIN">
+                                    Super Admin
+                                  </option>
+                                )}
                               </Select>
                             </div>
                             <div className="flex items-center space-x-2">
@@ -204,14 +212,16 @@ export default function AdminUsers() {
                           </div>
                         </DialogContent>
                       </Dialog>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDeleteUser(user.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {isSuperAdmin && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteUser(user.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </td>
                 </tr>

@@ -9,7 +9,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.id || (session.user as any).role !== "admin") {
+    if (!session?.user?.id || (session.user as any).role !== "SUPER_ADMIN") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -42,7 +42,7 @@ export async function PATCH(req: Request) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.id || (session.user as any).role !== "admin") {
+    if (!session?.user?.id || (session.user as any).role !== "SUPER_ADMIN") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

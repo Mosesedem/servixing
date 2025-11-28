@@ -5,6 +5,7 @@ import type React from "react";
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Users, FileText, DollarSign, Clock } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 interface Stats {
   totalUsers: number;
@@ -17,6 +18,9 @@ interface Stats {
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const { data: session } = useSession();
+
+  const isSuperAdmin = session?.user?.role === "SUPER_ADMIN";
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -73,18 +77,22 @@ export default function AdminDashboard() {
           value={stats.completedOrders}
           color="bg-green-50"
         />
-        <StatCard
-          icon={DollarSign}
-          title="Total Revenue"
-          value={`$${stats.totalRevenue?.toFixed(2)}`}
-          color="bg-emerald-50"
-        />
-        <StatCard
-          icon={Clock}
-          title="Pending Payments"
-          value={stats.pendingPayments}
-          color="bg-orange-50"
-        />
+        {isSuperAdmin && (
+          <>
+            <StatCard
+              icon={DollarSign}
+              title="Total Revenue"
+              value={`$${stats.totalRevenue?.toFixed(2)}`}
+              color="bg-emerald-50"
+            />
+            <StatCard
+              icon={Clock}
+              title="Pending Payments"
+              value={stats.pendingPayments}
+              color="bg-orange-50"
+            />
+          </>
+        )}
       </div>
 
       <Card className="p-6">
@@ -95,14 +103,22 @@ export default function AdminDashboard() {
             <strong>{stats.totalWorkOrders}</strong> total work orders.
           </p>
           <p className="text-muted-foreground">
-            <strong>{stats.completedOrders}</strong> orders have been completed,
-            generating <strong>${stats.totalRevenue.toFixed(2)}</strong> in
-            revenue.
+            <strong>{stats.completedOrders}</strong> orders have been completed
+            {isSuperAdmin ? (
+              <>
+                , generating <strong>${stats.totalRevenue.toFixed(2)}</strong>{" "}
+                in revenue.
+              </>
+            ) : (
+              "."
+            )}
           </p>
-          <p className="text-muted-foreground">
-            <strong>{stats.pendingPayments}</strong> work orders are awaiting
-            payment.
-          </p>
+          {isSuperAdmin && (
+            <p className="text-muted-foreground">
+              <strong>{stats.pendingPayments}</strong> work orders are awaiting
+              payment.
+            </p>
+          )}
         </div>
       </Card>
     </div>

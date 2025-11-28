@@ -13,10 +13,12 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useSession } from "next-auth/react";
 
 export function AdminSidebar() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { data: session } = useSession();
 
   const isActive = (path: string) => {
     if (path === "/admin") {
@@ -24,6 +26,8 @@ export function AdminSidebar() {
     }
     return pathname.startsWith(path);
   };
+
+  const isSuperAdmin = session?.user?.role === "SUPER_ADMIN";
 
   const links = [
     {
@@ -41,11 +45,15 @@ export function AdminSidebar() {
       icon: Users,
       label: "Users",
     },
-    {
-      href: "/admin/payments",
-      icon: CreditCard,
-      label: "Payments",
-    },
+    ...(isSuperAdmin
+      ? [
+          {
+            href: "/admin/payments",
+            icon: CreditCard,
+            label: "Payments",
+          },
+        ]
+      : []),
     {
       href: "/admin/settings",
       icon: Settings,

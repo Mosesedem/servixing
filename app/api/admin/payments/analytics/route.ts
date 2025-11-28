@@ -10,8 +10,8 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     const role = (session?.user as any)?.role as UserRole | undefined;
 
-    if (!role || (role !== "ADMIN" && role !== "SUPER_ADMIN")) {
-      return errorResponse("FORBIDDEN", "Admin privileges required", 403);
+    if (!role || role !== "SUPER_ADMIN") {
+      return errorResponse("FORBIDDEN", "Super admin privileges required", 403);
     }
 
     const { searchParams } = new URL(request.url);

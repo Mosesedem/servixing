@@ -11,13 +11,13 @@ export default async function AdminLayout({
 }) {
   const session = await getServerSession(authOptions);
 
-  // if (
-  //   !session?.user?.id ||
-  //   (session.user as any).role !== "ADMIN" ||
-  //   (session.user as any).role !== "SUPER_ADMIN"
-  // ) {
-  //   redirect("/dashboard");
-  // }
+  if (
+    !session?.user?.id ||
+    ((session.user as any).role !== "ADMIN" &&
+      (session.user as any).role !== "SUPER_ADMIN")
+  ) {
+    redirect("/dashboard");
+  }
 
   return (
     <div className="flex min-h-screen bg-background">

@@ -12,8 +12,13 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.id || (session.user as any).role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userRole = (session.user as any).role;
+    if (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { role, sendEmail: shouldSendEmail } = await req.json();
@@ -21,6 +26,24 @@ export async function PATCH(
 
     if (!role) {
       return NextResponse.json({ error: "Role is required" }, { status: 400 });
+    }
+
+    // Only SUPER_ADMIN can assign SUPER_ADMIN role
+    if (role === "SUPER_ADMIN" && userRole !== "SUPER_ADMIN") {
+      return NextResponse.json(
+        { error: "Only super admins can assign super admin role" },
+        { status: 403 }
+      );
+    }
+
+    // Get current user data for audit log
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+
+    if (!currentUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     const updatedUser = await prisma.user.update({
@@ -36,7 +59,7 @@ export async function PATCH(
         action: "user_role_updated",
         entityType: "User",
         entityId: userId,
-        oldValue: JSON.stringify({ role: "previous" }), // You'd need to fetch old value
+        oldValue: JSON.stringify({ role: currentUser.role }),
         newValue: JSON.stringify({ role }),
       },
     });
@@ -87,8 +110,11 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.id || (session.user as any).role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    if (!session?.user?.id || (session.user as any).role !== "SUPER_ADMIN") {
+      return NextResponse.json(
+        { error: "Forbidden - Super admin required" },
+        { status: 403 }
+      );
     }
 
     const { sendEmail: shouldSendEmail } = await req.json();
