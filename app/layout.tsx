@@ -8,9 +8,9 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { ConditionalNavbar } from "@/components/conditional-navbar";
 import { ConditionalFooter } from "@/components/conditional-footer";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Livvic } from "next/font/google";
 
-const plusJakartaSans = Plus_Jakarta_Sans({
+const livvic = Livvic({
   weight: "400",
   subsets: ["latin"],
 });
@@ -58,7 +58,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body className={plusJakartaSans.className}>
+      <body className={livvic.className + " text-bold"}>
         <Providers session={session}>
           <ConditionalNavbar />
 

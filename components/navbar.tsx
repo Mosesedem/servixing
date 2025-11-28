@@ -267,7 +267,7 @@ export function Navbar() {
             </div>
 
             {/* Desktop Auth */}
-            <div className="hidden md:flex items-center gap-2">
+            <div className="hidden lg:flex items-center gap-2">
               {session ? (
                 <>
                   <Button
@@ -330,7 +330,7 @@ export function Navbar() {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               size="icon"
               variant="ghost"
-              className="md:hidden"
+              className="lg:hidden"
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileMenuOpen}
             >
@@ -347,14 +347,14 @@ export function Navbar() {
       {/* Mobile Navigation Overlay */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
       {/* Mobile Navigation Menu - Full Width Slide Down */}
       <div
-        className={`fixed top-16 left-0 right-0 max-h-[calc(100vh-4rem)] bg-background border-b border-border shadow-2xl z-40 md:hidden transform transition-transform duration-300 ease-out overflow-y-auto ${
+        className={`fixed top-16 left-0 right-0 max-h-[calc(100vh-4rem)] bg-background border-b border-border shadow-2xl z-40 lg:hidden transform transition-transform duration-300 ease-out overflow-y-auto ${
           mobileMenuOpen ? "translate-y-0" : "-translate-y-full"
         }`}
       >
