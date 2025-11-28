@@ -39,7 +39,7 @@ export default function BookRepairPage() {
     serialNumber: "",
     issue: "",
     problemType: "",
-    dropoffType: "DROPOFF" as "DROPOFF" | "DISPATCH",
+    dropoffType: "DROPOFF" as "DROPOFF" | "DISPATCH" | "ONSITE",
     // Structured address fields for better detail
     addressLine1: "",
     addressLine2: "",
@@ -111,11 +111,14 @@ export default function BookRepairPage() {
         return;
       }
 
-      // If dispatch, validate structured address fields
-      if (formData.dropoffType === "DISPATCH") {
+      // If dispatch or onsite, validate structured address fields
+      if (
+        formData.dropoffType === "DISPATCH" ||
+        formData.dropoffType === "ONSITE"
+      ) {
         if (!formData.addressLine1 || !formData.city || !formData.state) {
           setError(
-            "Please provide address line 1, city, and state for dispatch"
+            "Please provide address line 1, city, and state for dispatch and onsite services"
           );
           setLoading(false);
           return;
@@ -136,9 +139,9 @@ export default function BookRepairPage() {
         }
       }
 
-      // Build full address string if dispatch
+      // Build full address string if dispatch or onsite
       const addressText =
-        formData.dropoffType === "DISPATCH"
+        formData.dropoffType === "DISPATCH" || formData.dropoffType === "ONSITE"
           ? [
               formData.addressLine1,
               formData.addressLine2,
@@ -199,7 +202,9 @@ ${formData.issue}
 ${
   formData.dropoffType === "DROPOFF"
     ? "Drop-off at service center"
-    : `Dispatch pickup at:\n${addressText}`
+    : formData.dropoffType === "DISPATCH"
+    ? `Dispatch pickup at:\n${addressText}`
+    : `Onsite service at:\n${addressText}`
 }
 
 ${
@@ -233,7 +238,8 @@ ${
               problemType: formData.problemType || null,
               dropoffType: formData.dropoffType,
               address:
-                formData.dropoffType === "DISPATCH"
+                formData.dropoffType === "DISPATCH" ||
+                formData.dropoffType === "ONSITE"
                   ? {
                       addressLine1: formData.addressLine1,
                       addressLine2: formData.addressLine2,
@@ -292,7 +298,10 @@ ${
         fd.set("issue", formData.issue);
         fd.set("problemType", formData.problemType || "");
         fd.set("dropoffType", formData.dropoffType);
-        if (formData.dropoffType === "DISPATCH") {
+        if (
+          formData.dropoffType === "DISPATCH" ||
+          formData.dropoffType === "ONSITE"
+        ) {
           fd.set("addressLine1", formData.addressLine1);
           fd.set("addressLine2", formData.addressLine2 || "");
           fd.set("city", formData.city);
@@ -653,7 +662,7 @@ ${
             <div className="space-y-4">
               <h3 className="font-semibold text-lg">Service Type</h3>
 
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-3 gap-4">
                 <label
                   className={`relative flex items-start p-4 border-2 rounded-lg cursor-pointer transition-colors ${
                     formData.dropoffType === "DROPOFF"
@@ -705,9 +714,36 @@ ${
                     </div>
                   </div>
                 </label>
+
+                <label
+                  className={`relative flex items-start p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+                    formData.dropoffType === "ONSITE"
+                      ? "border-orange-600 bg-orange-50 dark:bg-orange-900/20"
+                      : "border-gray-300 hover:border-gray-400"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="dropoffType"
+                    value="ONSITE"
+                    checked={formData.dropoffType === "ONSITE"}
+                    onChange={handleChange}
+                    className="mt-1"
+                  />
+                  <div className="ml-3">
+                    <div className="font-semibold">Onsite Service</div>
+                    <div className="text-sm text-muted-foreground">
+                      Engineer dispatched to your address to fix the issue
+                    </div>
+                    <div className="text-sm font-medium text-orange-600 mt-1">
+                      Fee applies
+                    </div>
+                  </div>
+                </label>
               </div>
 
-              {formData.dropoffType === "DISPATCH" && (
+              {(formData.dropoffType === "DISPATCH" ||
+                formData.dropoffType === "ONSITE") && (
                 <div className="space-y-4">
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -723,7 +759,10 @@ ${
                         value={formData.addressLine1}
                         onChange={handleChange}
                         placeholder="House/Apartment, Street"
-                        required={formData.dropoffType === "DISPATCH"}
+                        required={
+                          formData.dropoffType === "DISPATCH" ||
+                          formData.dropoffType === "ONSITE"
+                        }
                       />
                     </div>
                     <div className="space-y-2">
@@ -753,7 +792,10 @@ ${
                         value={formData.city}
                         onChange={handleChange}
                         placeholder="e.g., Lagos"
-                        required={formData.dropoffType === "DISPATCH"}
+                        required={
+                          formData.dropoffType === "DISPATCH" ||
+                          formData.dropoffType === "ONSITE"
+                        }
                       />
                     </div>
                     <div className="space-y-2">
@@ -766,7 +808,10 @@ ${
                         value={formData.state}
                         onChange={handleChange}
                         placeholder="e.g., Lagos State"
-                        required={formData.dropoffType === "DISPATCH"}
+                        required={
+                          formData.dropoffType === "DISPATCH" ||
+                          formData.dropoffType === "ONSITE"
+                        }
                       />
                     </div>
                     <div className="space-y-2">

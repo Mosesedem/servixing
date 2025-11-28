@@ -27,6 +27,9 @@ export class WorkOrderService {
     userId: string,
     data: {
       deviceId: string;
+      contactName?: string;
+      contactEmail?: string;
+      contactPhone?: string;
       issueDescription: string;
       problemType?: string;
       dropoffType: string;
@@ -52,10 +55,10 @@ export class WorkOrderService {
     let dispatchFee: Decimal | null = null;
     let warrantyFee: Decimal | null = null;
 
-    if (data.dropoffType === "DISPATCH") {
+    if (data.dropoffType === "DISPATCH" || data.dropoffType === "ONSITE") {
       if (!data.dispatchAddress) {
         throw new ValidationError(
-          "Dispatch address is required for dispatch orders"
+          "Address is required for dispatch and onsite orders"
         );
       }
       dispatchFee = new Decimal(
@@ -76,6 +79,9 @@ export class WorkOrderService {
       data: {
         userId,
         deviceId: data.deviceId,
+        contactName: data.contactName,
+        contactEmail: data.contactEmail,
+        contactPhone: data.contactPhone,
         issueDescription: data.issueDescription,
         problemType: data.problemType || null,
         dropoffType: data.dropoffType as any,

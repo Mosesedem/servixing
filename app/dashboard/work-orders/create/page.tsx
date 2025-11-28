@@ -31,9 +31,12 @@ export default function CreateWorkOrderPage() {
 
   const [formData, setFormData] = useState({
     deviceId: preselectedDeviceId || "",
+    contactName: "",
+    contactEmail: "",
+    contactPhone: "",
     issueDescription: "",
     problemType: "",
-    dropoffType: "DROPOFF" as "DROPOFF" | "DISPATCH",
+    dropoffType: "DROPOFF" as "DROPOFF" | "DISPATCH" | "ONSITE",
     warrantyDecision: "skipped" as "requested" | "skipped" | "requested_paid",
     dispatchAddress: {
       street: "",
@@ -86,9 +89,19 @@ export default function CreateWorkOrderPage() {
       setError("Please select a device");
       return;
     }
-    if (step === 2 && formData.issueDescription.length < 10) {
-      setError("Issue description must be at least 10 characters");
-      return;
+    if (step === 2) {
+      if (
+        !formData.contactName ||
+        !formData.contactEmail ||
+        !formData.contactPhone
+      ) {
+        setError("Please fill in all contact information");
+        return;
+      }
+      if (formData.issueDescription.length < 10) {
+        setError("Issue description must be at least 10 characters");
+        return;
+      }
     }
 
     setError(null);
@@ -109,14 +122,20 @@ export default function CreateWorkOrderPage() {
       // Prepare data based on dropoff type
       const submitData: any = {
         deviceId: formData.deviceId,
+        contactName: formData.contactName,
+        contactEmail: formData.contactEmail,
+        contactPhone: formData.contactPhone,
         issueDescription: formData.issueDescription,
         problemType: formData.problemType || undefined,
         dropoffType: formData.dropoffType,
         warrantyDecision: formData.warrantyDecision,
       };
 
-      // Add dispatch address only if DISPATCH type
-      if (formData.dropoffType === "DISPATCH") {
+      // Add dispatch address only if DISPATCH or ONSITE type
+      if (
+        formData.dropoffType === "DISPATCH" ||
+        formData.dropoffType === "ONSITE"
+      ) {
         submitData.dispatchAddress = formData.dispatchAddress;
       }
 
@@ -196,7 +215,7 @@ export default function CreateWorkOrderPage() {
         </div>
         <div className="flex justify-between max-w-2xl mx-auto mt-2 text-xs text-gray-600">
           <span>Select Device</span>
-          <span>Describe Issue</span>
+          <span>Provide Details</span>
           <span>Service Type</span>
           <span>Review</span>
         </div>
@@ -282,10 +301,10 @@ export default function CreateWorkOrderPage() {
           </Card>
         )}
 
-        {/* Step 2: Describe Issue */}
+        {/* Step 2: Provide Details */}
         {step === 2 && (
           <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-6">Describe the Issue</h2>
+            <h2 className="text-xl font-semibold mb-6">Provide Details</h2>
 
             {selectedDevice && (
               <div className="bg-gray-50 p-4 rounded-lg mb-6">
@@ -296,45 +315,107 @@ export default function CreateWorkOrderPage() {
               </div>
             )}
 
-            <div className="space-y-2">
-              <label htmlFor="problemType" className="text-sm font-medium">
-                Problem Type
-              </label>
-              <select
-                id="problemType"
-                name="problemType"
-                value={formData.problemType}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-transparent"
-              >
-                <option value="">Select problem type (optional)</option>
-                {PROBLEM_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
+            {/* Contact Information */}
+            <div className="space-y-4 mb-6">
+              <h3 className="font-semibold text-lg">Contact Information</h3>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label htmlFor="contactName" className="text-sm font-medium">
+                    Full Name <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    id="contactName"
+                    name="contactName"
+                    value={formData.contactName}
+                    onChange={handleChange}
+                    placeholder="John Doe"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="contactPhone" className="text-sm font-medium">
+                    Phone Number <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    id="contactPhone"
+                    name="contactPhone"
+                    type="tel"
+                    value={formData.contactPhone}
+                    onChange={handleChange}
+                    placeholder="+234 800 000 0000"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="contactEmail" className="text-sm font-medium">
+                  Email Address <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  id="contactEmail"
+                  name="contactEmail"
+                  type="email"
+                  value={formData.contactEmail}
+                  onChange={handleChange}
+                  placeholder="you@example.com"
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  We'll send updates and quotes to this email
+                </p>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <label htmlFor="issueDescription" className="text-sm font-medium">
-                What's wrong with your device?{" "}
-                <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                id="issueDescription"
-                name="issueDescription"
-                value={formData.issueDescription}
-                onChange={handleChange}
-                rows={8}
-                maxLength={2000}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-transparent resize-none"
-                placeholder="Please describe the problem in detail. Include:&#10;- What happened?&#10;- When did it start?&#10;- What have you tried?&#10;- Any error messages?"
-                required
-              />
-              <p className="text-xs text-gray-500 text-right">
-                {formData.issueDescription.length}/2000
-              </p>
+            {/* Issue Description */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg">Issue Description</h3>
+
+              <div className="space-y-2">
+                <label htmlFor="problemType" className="text-sm font-medium">
+                  Problem Type
+                </label>
+                <select
+                  id="problemType"
+                  name="problemType"
+                  value={formData.problemType}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-transparent"
+                >
+                  <option value="">Select problem type (optional)</option>
+                  {PROBLEM_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  htmlFor="issueDescription"
+                  className="text-sm font-medium"
+                >
+                  What's wrong with your device?{" "}
+                  <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="issueDescription"
+                  name="issueDescription"
+                  value={formData.issueDescription}
+                  onChange={handleChange}
+                  rows={8}
+                  maxLength={2000}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-transparent resize-none"
+                  placeholder="Please describe the problem in detail. Include:&#10;- What happened?&#10;- When did it start?&#10;- What have you tried?&#10;- Any error messages?"
+                  required
+                />
+                <p className="text-xs text-gray-500 text-right">
+                  {formData.issueDescription.length}/2000
+                </p>
+              </div>
             </div>
 
             <div className="flex justify-between mt-6">
@@ -406,12 +487,41 @@ export default function CreateWorkOrderPage() {
                   </p>
                 </div>
               </label>
+
+              <label
+                className={`flex items-start gap-4 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                  formData.dropoffType === "ONSITE"
+                    ? "border-orange-600 bg-orange-50"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="dropoffType"
+                  value="ONSITE"
+                  checked={formData.dropoffType === "ONSITE"}
+                  onChange={handleChange}
+                  className="mt-1 w-5 h-5 text-orange-600"
+                />
+                <div className="flex-1">
+                  <h3 className="font-semibold">Onsite Service</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Engineer dispatched to your address to fix the issue.
+                    Additional fee: ₦1,000
+                  </p>
+                </div>
+              </label>
             </div>
 
             {/* Dispatch Address */}
-            {formData.dropoffType === "DISPATCH" && (
+            {(formData.dropoffType === "DISPATCH" ||
+              formData.dropoffType === "ONSITE") && (
               <div className="space-y-4 mb-6 p-4 bg-gray-50 rounded-lg">
-                <h3 className="font-semibold text-sm">Pickup Address</h3>
+                <h3 className="font-semibold text-sm">
+                  {formData.dropoffType === "DISPATCH"
+                    ? "Pickup Address"
+                    : "Service Address"}
+                </h3>
                 <div className="grid grid-cols-1 gap-4">
                   <Input
                     name="street"
@@ -526,6 +636,33 @@ export default function CreateWorkOrderPage() {
             </h2>
 
             <div className="space-y-6">
+              {/* Contact Info */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-600 mb-2">
+                  Contact Information
+                </h3>
+                <div className="p-4 bg-gray-50 rounded-lg space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm">Name:</span>
+                    <span className="font-semibold text-sm">
+                      {formData.contactName}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Email:</span>
+                    <span className="font-semibold text-sm">
+                      {formData.contactEmail}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Phone:</span>
+                    <span className="font-semibold text-sm">
+                      {formData.contactPhone}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               {/* Device Info */}
               <div>
                 <h3 className="text-sm font-medium text-gray-600 mb-2">
@@ -575,12 +712,19 @@ export default function CreateWorkOrderPage() {
                     <span className="font-semibold text-sm">
                       {formData.dropoffType === "DROPOFF"
                         ? "Drop-off"
-                        : "Dispatch Service"}
+                        : formData.dropoffType === "DISPATCH"
+                        ? "Dispatch Service"
+                        : "Onsite Service"}
                     </span>
                   </div>
-                  {formData.dropoffType === "DISPATCH" && (
+                  {(formData.dropoffType === "DISPATCH" ||
+                    formData.dropoffType === "ONSITE") && (
                     <div className="text-sm">
-                      <p className="text-gray-600 mb-1">Pickup Address:</p>
+                      <p className="text-gray-600 mb-1">
+                        {formData.dropoffType === "DISPATCH"
+                          ? "Pickup Address:"
+                          : "Service Address:"}
+                      </p>
                       <p>
                         {formData.dispatchAddress.street},{" "}
                         {formData.dispatchAddress.city},{" "}
@@ -604,9 +748,12 @@ export default function CreateWorkOrderPage() {
               {/* Total Fees */}
               <div className="border-t pt-4">
                 <div className="flex justify-between mb-2">
-                  <span>Dispatch Fee:</span>
+                  <span>Service Fee:</span>
                   <span className="font-semibold">
-                    {formData.dropoffType === "DISPATCH" ? "₦1,000" : "₦0"}
+                    {formData.dropoffType === "DISPATCH" ||
+                    formData.dropoffType === "ONSITE"
+                      ? "₦1,000"
+                      : "₦0"}
                   </span>
                 </div>
                 <div className="flex justify-between mb-2">
@@ -621,7 +768,10 @@ export default function CreateWorkOrderPage() {
                   <span>Total:</span>
                   <span className="text-orange-600">
                     ₦
-                    {(formData.dropoffType === "DISPATCH" ? 1000 : 0) +
+                    {(formData.dropoffType === "DISPATCH" ||
+                    formData.dropoffType === "ONSITE"
+                      ? 1000
+                      : 0) +
                       (formData.warrantyDecision === "requested_paid"
                         ? 500
                         : 0)}

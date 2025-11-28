@@ -17,12 +17,15 @@ export const addressSchema = z.object({
 export const createWorkOrderSchema = z
   .object({
     deviceId: z.string().cuid("Invalid device ID"),
+    contactName: z.string().optional(),
+    contactEmail: z.string().email().optional(),
+    contactPhone: z.string().optional(),
     issueDescription: z
       .string()
       .min(10, "Issue description must be at least 10 characters")
       .max(2000, "Issue description is too long"),
     problemType: z.string().optional(), // Selected problem category
-    dropoffType: z.enum(["DROPOFF", "DISPATCH"]),
+    dropoffType: z.enum(["DROPOFF", "DISPATCH", "ONSITE"]),
     dispatchAddress: addressSchema.optional(),
     warrantyDecision: z
       .enum(["requested", "skipped", "requested_paid"])
@@ -30,14 +33,17 @@ export const createWorkOrderSchema = z
   })
   .refine(
     (data) => {
-      // If DISPATCH, dispatch address is required
-      if (data.dropoffType === "DISPATCH" && !data.dispatchAddress) {
+      // If DISPATCH or ONSITE, dispatch address is required
+      if (
+        (data.dropoffType === "DISPATCH" || data.dropoffType === "ONSITE") &&
+        !data.dispatchAddress
+      ) {
         return false;
       }
       return true;
     },
     {
-      message: "Dispatch address is required for dispatch orders",
+      message: "Address is required for dispatch and onsite orders",
       path: ["dispatchAddress"],
     }
   );

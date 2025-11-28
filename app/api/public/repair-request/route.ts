@@ -82,14 +82,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (dropoffType === "DISPATCH") {
+    if (dropoffType === "DISPATCH" || dropoffType === "ONSITE") {
       if (!addressLine1 || !city || !state) {
         return NextResponse.json(
           {
             error: {
               code: "VALIDATION_ERROR",
               message:
-                "Address line 1, city and state are required for dispatch",
+                "Address line 1, city and state are required for dispatch and onsite services",
             },
           },
           { status: 400 }
@@ -177,7 +177,7 @@ export async function POST(req: NextRequest) {
       problemType: problemType || null,
       dropoffType,
       address:
-        dropoffType === "DISPATCH"
+        dropoffType === "DISPATCH" || dropoffType === "ONSITE"
           ? { addressLine1, addressLine2, city, state, postalCode, landmark }
           : null,
       customerRequest: customerRequest || null,
@@ -188,7 +188,7 @@ export async function POST(req: NextRequest) {
 
     // Build description markdown for staff
     const addressText =
-      dropoffType === "DISPATCH"
+      dropoffType === "DISPATCH" || dropoffType === "ONSITE"
         ? [
             addressLine1,
             addressLine2,
@@ -222,7 +222,9 @@ ${issue}
 ${
   dropoffType === "DROPOFF"
     ? "Drop-off at service center"
-    : `Dispatch pickup at:\n${addressText}`
+    : dropoffType === "DISPATCH"
+    ? `Dispatch pickup at:\n${addressText}`
+    : `Onsite service at:\n${addressText}`
 }
 
 ${
@@ -303,8 +305,8 @@ ${
       <p><strong>Issue:</strong><br/>${issue.replace(/\n/g, "<br/>")}</p>\
       <p><strong>Service Type:</strong> ${dropoffType}</p>\
       ${
-        dropoffType === "DISPATCH"
-          ? `<p><strong>Pickup Address:</strong><br/>${addressText.replace(
+        dropoffType === "DISPATCH" || dropoffType === "ONSITE"
+          ? `<p><strong>Address:</strong><br/>${addressText.replace(
               /\n/g,
               "<br/>"
             )}</p>`

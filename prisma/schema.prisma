@@ -43,6 +43,7 @@ enum RefundStatus {
 enum DropoffType {
   DROPOFF
   DISPATCH
+  ONSITE
 }
 
 enum WarrantyStatus {
@@ -207,6 +208,11 @@ model WorkOrder {
   id       String @id @default(cuid())
   userId   String
   deviceId String
+
+  // Contact information (for backup/historical)
+  contactName  String?
+  contactEmail String?
+  contactPhone String?
 
   // Status and workflow
   status           WorkOrderStatus @default(CREATED)
