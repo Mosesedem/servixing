@@ -21,8 +21,8 @@ interface WorkOrder {
   device: { brand: string; model: string };
   status: string;
   issueDescription: string;
-  estimatedCost?: number;
-  finalCost?: number;
+  estimatedCost?: string;
+  finalCost?: string;
   paymentStatus: string;
   createdAt: string;
 }
@@ -198,7 +198,7 @@ export default function AdminWorkOrders() {
                     </span>
                     {order.finalCost && (
                       <span className="font-semibold">
-                        Final: ${order.finalCost.toFixed(2)}
+                        Final: ${Number(order.finalCost).toFixed(2)}
                       </span>
                     )}
                   </div>

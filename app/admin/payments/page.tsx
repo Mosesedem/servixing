@@ -22,7 +22,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 interface Payment {
   id: string;
-  amount: number;
+  amount: string;
   currency: string;
   status: string;
   createdAt: string;
@@ -213,7 +213,7 @@ export default function AdminPaymentsPage() {
                         </div>
                       </td>
                       <td className="p-3 font-semibold">
-                        ₦{payment.amount.toFixed(2)}
+                        ₦{Number(payment.amount).toFixed(2)}
                       </td>
                       <td className="p-3">
                         <span
@@ -262,8 +262,10 @@ export default function AdminPaymentsPage() {
                                 <div className="space-y-4">
                                   <p>
                                     Refund ₦
-                                    {refundingPayment?.amount.toFixed(2)} to{" "}
-                                    {refundingPayment?.user.name}?
+                                    {Number(refundingPayment?.amount).toFixed(
+                                      2
+                                    )}{" "}
+                                    to {refundingPayment?.user.name}?
                                   </p>
                                   <div>
                                     <label className="block text-sm font-medium mb-2">

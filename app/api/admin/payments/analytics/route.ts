@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { successResponse, errorResponse } from "@/lib/api-response";
@@ -7,11 +7,22 @@ import { UserRole } from "@prisma/client";
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const role = (session?.user as any)?.role as UserRole | undefined;
+    // const session = await getServerSession(authOptions);
+    // const role = (session?.user as any)?.role as UserRole | undefined;
 
-    if (!role || role !== "SUPER_ADMIN") {
-      return errorResponse("FORBIDDEN", "Super admin privileges required", 403);
+    // if (!role || role !== "SUPER_ADMIN") {
+    //   return errorResponse("FORBIDDEN", "Super admin privileges required", 403);
+    // }
+
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userRole = (session.user as any).role;
+    if (userRole !== "SUPER_ADMIN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);

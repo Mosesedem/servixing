@@ -15,7 +15,6 @@ export async function GET() {
     if (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-
     const [
       totalUsers,
       totalWorkOrders,
