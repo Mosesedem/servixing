@@ -6,7 +6,27 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, User, Phone, Mail, MapPin } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  ArrowLeft,
+  Calendar,
+  User,
+  Phone,
+  Mail,
+  MapPin,
+  Edit,
+  Save,
+  X,
+} from "lucide-react";
 
 interface WorkOrderDetails {
   id: string;
@@ -26,7 +46,11 @@ interface WorkOrderDetails {
     color?: string;
     deviceType: string;
     description?: string;
+    images: string[];
   };
+  contactName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
   status: string;
   issueDescription: string;
   problemType?: string;
@@ -59,6 +83,9 @@ export default function WorkOrderDetails() {
   const id = params.id as string;
   const [workOrder, setWorkOrder] = useState<WorkOrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [editMode, setEditMode] = useState(false);
+  const [formData, setFormData] = useState<Partial<WorkOrderDetails>>({});
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchWorkOrder();
@@ -70,12 +97,47 @@ export default function WorkOrderDetails() {
       if (response.ok) {
         const data = await response.json();
         setWorkOrder(data);
+        setFormData(data);
       }
     } catch (error) {
       console.error("Error fetching work order:", error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/admin/work-orders/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+      if (response.ok) {
+        const updatedData = await response.json();
+        setWorkOrder(updatedData);
+        setFormData(updatedData);
+        setEditMode(false);
+      } else {
+        console.error("Failed to update work order");
+      }
+    } catch (error) {
+      console.error("Error updating work order:", error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setFormData(workOrder || {});
+    setEditMode(false);
+  };
+
+  const handleInputChange = (field: string, value: any) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const getStatusColor = (status: string) => {
@@ -154,6 +216,25 @@ export default function WorkOrderDetails() {
         <h1 className="text-3xl font-bold">
           Work Order #{workOrder.id.slice(-8)}
         </h1>
+        <div className="flex gap-2">
+          {!editMode ? (
+            <Button onClick={() => setEditMode(true)} variant="outline">
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </Button>
+          ) : (
+            <>
+              <Button onClick={handleSave} disabled={saving}>
+                <Save className="mr-2 h-4 w-4" />
+                {saving ? "Saving..." : "Save"}
+              </Button>
+              <Button onClick={handleCancel} variant="outline">
+                <X className="mr-2 h-4 w-4" />
+                Cancel
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -186,6 +267,28 @@ export default function WorkOrderDetails() {
           </CardContent>
         </Card>
 
+        {/* Contact Information */}
+        {(workOrder.contactName ||
+          workOrder.contactEmail ||
+          workOrder.contactPhone) && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Contact Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {workOrder.contactName && (
+                <p className="text-sm">Name: {workOrder.contactName}</p>
+              )}
+              {workOrder.contactEmail && (
+                <p className="text-sm">Email: {workOrder.contactEmail}</p>
+              )}
+              {workOrder.contactPhone && (
+                <p className="text-sm">Phone: {workOrder.contactPhone}</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Device Information */}
         <Card>
           <CardHeader>
@@ -217,6 +320,22 @@ export default function WorkOrderDetails() {
                   </Badge>
                 )}
               </div>
+              {workOrder.device.images &&
+                workOrder.device.images.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium">Device Images</p>
+                    <div className="flex gap-2 mt-2 flex-wrap">
+                      {workOrder.device.images.map((image, index) => (
+                        <img
+                          key={index}
+                          src={image}
+                          alt={`Device image ${index + 1}`}
+                          className="w-20 h-20 object-cover rounded"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
             </div>
           </CardContent>
         </Card>
@@ -228,13 +347,97 @@ export default function WorkOrderDetails() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center gap-2">
-              <Badge className={getStatusColor(workOrder.status)}>
-                {formatStatus(workOrder.status)}
-              </Badge>
-              <Badge className={getPaymentColor(workOrder.paymentStatus)}>
-                {formatStatus(workOrder.paymentStatus)}
-              </Badge>
+              {editMode ? (
+                <Select
+                  value={formData.status}
+                  onValueChange={(value) => handleInputChange("status", value)}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CREATED">Created</SelectItem>
+                    <SelectItem value="ACCEPTED">Accepted</SelectItem>
+                    <SelectItem value="IN_REPAIR">In Repair</SelectItem>
+                    <SelectItem value="AWAITING_PARTS">
+                      Awaiting Parts
+                    </SelectItem>
+                    <SelectItem value="READY_FOR_PICKUP">
+                      Ready For Pickup
+                    </SelectItem>
+                    <SelectItem value="COMPLETED">Completed</SelectItem>
+                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Badge className={getStatusColor(workOrder.status)}>
+                  {formatStatus(workOrder.status)}
+                </Badge>
+              )}
+              {editMode ? (
+                <Select
+                  value={formData.paymentStatus}
+                  onValueChange={(value) =>
+                    handleInputChange("paymentStatus", value)
+                  }
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PAID">Paid</SelectItem>
+                    <SelectItem value="FAILED">Failed</SelectItem>
+                    <SelectItem value="PENDING">Pending</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Badge className={getPaymentColor(workOrder.paymentStatus)}>
+                  {formatStatus(workOrder.paymentStatus)}
+                </Badge>
+              )}
             </div>
+            {editMode ? (
+              <div>
+                <Label htmlFor="paymentMethod">Payment Method</Label>
+                <Input
+                  id="paymentMethod"
+                  value={formData.paymentMethod || ""}
+                  onChange={(e) =>
+                    handleInputChange("paymentMethod", e.target.value)
+                  }
+                />
+              </div>
+            ) : (
+              workOrder.paymentMethod && (
+                <div>
+                  <p className="text-sm font-medium">Payment Method</p>
+                  <p className="text-sm text-muted-foreground">
+                    {workOrder.paymentMethod}
+                  </p>
+                </div>
+              )
+            )}
+            {editMode ? (
+              <div>
+                <Label htmlFor="paymentReference">Payment Reference</Label>
+                <Input
+                  id="paymentReference"
+                  value={formData.paymentReference || ""}
+                  onChange={(e) =>
+                    handleInputChange("paymentReference", e.target.value)
+                  }
+                />
+              </div>
+            ) : (
+              workOrder.paymentReference && (
+                <div>
+                  <p className="text-sm font-medium">Payment Reference</p>
+                  <p className="text-sm text-muted-foreground">
+                    {workOrder.paymentReference}
+                  </p>
+                </div>
+              )
+            )}
             <div>
               <p className="text-sm font-medium">Issue Description</p>
               <p className="text-sm text-muted-foreground">
@@ -251,7 +454,8 @@ export default function WorkOrderDetails() {
             )}
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               <Calendar className="h-4 w-4" />
-              Created: {new Date(workOrder.createdAt).toLocaleDateString()}
+              Created: {new Date(workOrder.createdAt).toLocaleDateString()} |
+              Updated: {new Date(workOrder.updatedAt).toLocaleDateString()}
             </div>
           </CardContent>
         </Card>
@@ -262,39 +466,161 @@ export default function WorkOrderDetails() {
             <CardTitle>Cost Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {workOrder.estimatedCost && (
+            {editMode ? (
               <div>
-                <p className="text-sm font-medium">Estimated Cost</p>
-                <p className="text-sm">
-                  {formatCurrency(workOrder.estimatedCost)}
-                </p>
+                <Label htmlFor="estimatedCost">Estimated Cost</Label>
+                <Input
+                  id="estimatedCost"
+                  type="number"
+                  value={formData.estimatedCost || ""}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "estimatedCost",
+                      parseFloat(e.target.value) || 0
+                    )
+                  }
+                />
               </div>
+            ) : (
+              workOrder.estimatedCost && (
+                <div>
+                  <p className="text-sm font-medium">Estimated Cost</p>
+                  <p className="text-sm">
+                    {formatCurrency(workOrder.estimatedCost)}
+                  </p>
+                </div>
+              )
             )}
-            {workOrder.finalCost && (
+            {editMode ? (
               <div>
-                <p className="text-sm font-medium">Final Cost</p>
-                <p className="text-sm">{formatCurrency(workOrder.finalCost)}</p>
+                <Label htmlFor="finalCost">Final Cost</Label>
+                <Input
+                  id="finalCost"
+                  type="number"
+                  value={formData.finalCost || ""}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "finalCost",
+                      parseFloat(e.target.value) || 0
+                    )
+                  }
+                />
               </div>
+            ) : (
+              workOrder.finalCost && (
+                <div>
+                  <p className="text-sm font-medium">Final Cost</p>
+                  <p className="text-sm">
+                    {formatCurrency(workOrder.finalCost)}
+                  </p>
+                </div>
+              )
             )}
-            {workOrder.totalAmount && (
+            {editMode ? (
               <div>
-                <p className="text-sm font-medium">Total Amount</p>
-                <p className="text-sm">
-                  {formatCurrency(workOrder.totalAmount)}
-                </p>
+                <Label htmlFor="totalAmount">Total Amount</Label>
+                <Input
+                  id="totalAmount"
+                  type="number"
+                  value={formData.totalAmount || ""}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "totalAmount",
+                      parseFloat(e.target.value) || 0
+                    )
+                  }
+                />
               </div>
+            ) : (
+              workOrder.totalAmount && (
+                <div>
+                  <p className="text-sm font-medium">Total Amount</p>
+                  <p className="text-sm">
+                    {formatCurrency(workOrder.totalAmount)}
+                  </p>
+                </div>
+              )
             )}
-            {workOrder.dispatchFee && (
+            {editMode ? (
               <div>
-                <p className="text-sm font-medium">Dispatch Fee</p>
-                <p className="text-sm">
-                  {formatCurrency(workOrder.dispatchFee)}
-                </p>
+                <Label htmlFor="dispatchFee">Dispatch Fee</Label>
+                <Input
+                  id="dispatchFee"
+                  type="number"
+                  value={formData.dispatchFee || ""}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "dispatchFee",
+                      parseFloat(e.target.value) || 0
+                    )
+                  }
+                />
               </div>
+            ) : (
+              workOrder.dispatchFee && (
+                <div>
+                  <p className="text-sm font-medium">Dispatch Fee</p>
+                  <p className="text-sm">
+                    {formatCurrency(workOrder.dispatchFee)}
+                  </p>
+                </div>
+              )
+            )}
+            {editMode ? (
+              <div>
+                <Label htmlFor="costBreakdown">Cost Breakdown</Label>
+                <Textarea
+                  id="costBreakdown"
+                  value={
+                    typeof formData.costBreakdown === "object"
+                      ? JSON.stringify(formData.costBreakdown, null, 2)
+                      : formData.costBreakdown || ""
+                  }
+                  onChange={(e) =>
+                    handleInputChange("costBreakdown", e.target.value)
+                  }
+                />
+              </div>
+            ) : (
+              workOrder.costBreakdown && (
+                <div>
+                  <p className="text-sm font-medium">Cost Breakdown</p>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {typeof workOrder.costBreakdown === "object"
+                      ? JSON.stringify(workOrder.costBreakdown, null, 2)
+                      : workOrder.costBreakdown}
+                  </p>
+                </div>
+              )
             )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Service Type */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Service Type</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div>
+            <p className="text-sm font-medium">Dropoff Type</p>
+            <p className="text-sm text-muted-foreground">
+              {formatStatus(workOrder.dropoffType)}
+            </p>
+          </div>
+          {workOrder.dispatchAddress && (
+            <div>
+              <p className="text-sm font-medium">Dispatch Address</p>
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                {typeof workOrder.dispatchAddress === "object"
+                  ? JSON.stringify(workOrder.dispatchAddress, null, 2)
+                  : workOrder.dispatchAddress}
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Warranty Information */}
       {workOrder.warrantyChecked && (
@@ -317,9 +643,97 @@ export default function WorkOrderDetails() {
                 {new Date(workOrder.warrantyExpiryDate).toLocaleDateString()}
               </p>
             )}
-            {workOrder.warrantyDecision && (
-              <p className="text-sm">Decision: {workOrder.warrantyDecision}</p>
+            {editMode ? (
+              <div>
+                <Label htmlFor="warrantyDecision">Warranty Decision</Label>
+                <Textarea
+                  id="warrantyDecision"
+                  value={formData.warrantyDecision || ""}
+                  onChange={(e) =>
+                    handleInputChange("warrantyDecision", e.target.value)
+                  }
+                />
+              </div>
+            ) : (
+              workOrder.warrantyDecision && (
+                <p className="text-sm">
+                  Decision: {workOrder.warrantyDecision}
+                </p>
+              )
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Support Tickets */}
+      {workOrder.supportTickets.length > 0 && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Support Tickets</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {workOrder.supportTickets.map((ticket) => (
+                <div key={ticket.id} className="border rounded p-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium">{ticket.title}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Status: {formatStatus(ticket.status)}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Priority: {ticket.priority}
+                      </p>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(ticket.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Warranty Checks */}
+      {workOrder.warrantyChecks.length > 0 && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Warranty Checks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {workOrder.warrantyChecks.map((check) => (
+                <div key={check.id} className="border rounded p-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium">{check.provider}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Status: {formatStatus(check.status)}
+                      </p>
+                      {check.result && (
+                        <p className="text-sm text-muted-foreground">
+                          Result:{" "}
+                          {typeof check.result === "object"
+                            ? JSON.stringify(check.result, null, 2)
+                            : check.result}
+                        </p>
+                      )}
+                      {check.errorMessage && (
+                        <p className="text-sm text-red-600">
+                          Error: {check.errorMessage}
+                        </p>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Initiated:{" "}
+                      {new Date(check.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}
@@ -388,16 +802,24 @@ export default function WorkOrderDetails() {
       )}
 
       {/* Notes */}
-      {workOrder.notes && (
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Notes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm whitespace-pre-wrap">{workOrder.notes}</p>
-          </CardContent>
-        </Card>
-      )}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Notes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {editMode ? (
+            <Textarea
+              value={formData.notes || ""}
+              onChange={(e) => handleInputChange("notes", e.target.value)}
+              placeholder="Add notes..."
+            />
+          ) : (
+            <p className="text-sm whitespace-pre-wrap">
+              {workOrder.notes || "No notes"}
+            </p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
