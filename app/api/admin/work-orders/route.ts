@@ -19,21 +19,31 @@ export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
     const status = searchParams.get("status");
     const paymentStatus = searchParams.get("paymentStatus");
+    const limit = searchParams.get("limit");
+    const page = searchParams.get("page");
 
     const where: any = {};
     if (status) where.status = status;
     if (paymentStatus) where.paymentStatus = paymentStatus;
 
-    const workOrders = await prisma.workOrder.findMany({
-      where,
-      include: {
-        user: { select: { id: true, email: true, name: true, phone: true } },
-        device: { select: { brand: true, model: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    const take = limit ? parseInt(limit) : 10;
+    const skip = page ? (parseInt(page) - 1) * take : 0;
 
-    return NextResponse.json(workOrders);
+    const [workOrders, total] = await Promise.all([
+      prisma.workOrder.findMany({
+        where,
+        include: {
+          user: { select: { id: true, email: true, name: true, phone: true } },
+          device: { select: { brand: true, model: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take,
+        skip,
+      }),
+      prisma.workOrder.count({ where }),
+    ]);
+
+    return NextResponse.json({ workOrders, total });
   } catch (error) {
     console.error(" Error fetching work orders:", error);
     return NextResponse.json(

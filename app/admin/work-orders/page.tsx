@@ -4,7 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Select } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
@@ -30,8 +36,12 @@ interface WorkOrder {
 export default function AdminWorkOrders() {
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [total, setTotal] = useState(0);
   const [editingOrder, setEditingOrder] = useState<WorkOrder | null>(null);
   const [sendEmail, setSendEmail] = useState(true);
   const [notes, setNotes] = useState("");
@@ -39,7 +49,7 @@ export default function AdminWorkOrders() {
 
   useEffect(() => {
     fetchWorkOrders();
-  }, [statusFilter, paymentFilter]);
+  }, [statusFilter, paymentFilter, page]);
 
   const fetchWorkOrders = async () => {
     try {
@@ -47,12 +57,15 @@ export default function AdminWorkOrders() {
       const params = new URLSearchParams();
       if (statusFilter) params.append("status", statusFilter);
       if (paymentFilter) params.append("paymentStatus", paymentFilter);
+      params.append("page", page.toString());
+      params.append("limit", limit.toString());
       if (params.toString()) url += "?" + params.toString();
 
       const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
-        setWorkOrders(data);
+        setWorkOrders(data.workOrders);
+        setTotal(data.total);
       }
     } catch (error) {
       console.error(" Error fetching work orders:", error);
@@ -62,6 +75,7 @@ export default function AdminWorkOrders() {
   };
 
   const handleStatusUpdate = async (orderId: string, newStatus: string) => {
+    setUpdating(true);
     try {
       const response = await fetch("/api/admin/work-orders", {
         method: "PATCH",
@@ -82,6 +96,8 @@ export default function AdminWorkOrders() {
       }
     } catch (error) {
       console.error("Error updating work order:", error);
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -133,22 +149,30 @@ export default function AdminWorkOrders() {
       {/* Filters */}
       <div className="flex gap-4 mb-6">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <option value="">All Statuses</option>
-          <option value="CREATED">Created</option>
-          <option value="ACCEPTED">Accepted</option>
-          <option value="IN_REPAIR">In Repair</option>
-          <option value="AWAITING_PARTS">Awaiting Parts</option>
-          <option value="READY_FOR_PICKUP">Ready for Pickup</option>
-          <option value="COMPLETED">Completed</option>
-          <option value="CANCELLED">Cancelled</option>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="All Statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="CREATED">Created</SelectItem>
+            <SelectItem value="ACCEPTED">Accepted</SelectItem>
+            <SelectItem value="IN_REPAIR">In Repair</SelectItem>
+            <SelectItem value="AWAITING_PARTS">Awaiting Parts</SelectItem>
+            <SelectItem value="READY_FOR_PICKUP">Ready for Pickup</SelectItem>
+            <SelectItem value="COMPLETED">Completed</SelectItem>
+            <SelectItem value="CANCELLED">Cancelled</SelectItem>
+          </SelectContent>
         </Select>
 
         <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-          <option value="">All Payments</option>
-          <option value="PENDING">Pending</option>
-          <option value="PAID">Paid</option>
-          <option value="FAILED">Failed</option>
-          <option value="REFUNDED">Refunded</option>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="All Payments" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="PENDING">Pending</SelectItem>
+            <SelectItem value="PAID">Paid</SelectItem>
+            <SelectItem value="FAILED">Failed</SelectItem>
+            <SelectItem value="REFUNDED">Refunded</SelectItem>
+          </SelectContent>
         </Select>
       </div>
 
@@ -233,17 +257,28 @@ export default function AdminWorkOrders() {
                               )
                             }
                           >
-                            <option value="CREATED">Created</option>
-                            <option value="ACCEPTED">Accepted</option>
-                            <option value="IN_REPAIR">In Repair</option>
-                            <option value="AWAITING_PARTS">
-                              Awaiting Parts
-                            </option>
-                            <option value="READY_FOR_PICKUP">
-                              Ready for Pickup
-                            </option>
-                            <option value="COMPLETED">Completed</option>
-                            <option value="CANCELLED">Cancelled</option>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="CREATED">Created</SelectItem>
+                              <SelectItem value="ACCEPTED">Accepted</SelectItem>
+                              <SelectItem value="IN_REPAIR">
+                                In Repair
+                              </SelectItem>
+                              <SelectItem value="AWAITING_PARTS">
+                                Awaiting Parts
+                              </SelectItem>
+                              <SelectItem value="READY_FOR_PICKUP">
+                                Ready for Pickup
+                              </SelectItem>
+                              <SelectItem value="COMPLETED">
+                                Completed
+                              </SelectItem>
+                              <SelectItem value="CANCELLED">
+                                Cancelled
+                              </SelectItem>
+                            </SelectContent>
                           </Select>
                         </div>
                         <div>
@@ -292,8 +327,9 @@ export default function AdminWorkOrders() {
                                 editingOrder.status
                               )
                             }
+                            disabled={updating}
                           >
-                            Update Status
+                            {updating ? "Updating..." : "Update Status"}
                           </Button>
                           <Button
                             variant="outline"
@@ -318,6 +354,29 @@ export default function AdminWorkOrders() {
               </div>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {total > limit && (
+        <div className="flex justify-center items-center gap-2 mt-6">
+          <Button
+            variant="outline"
+            onClick={() => setPage(page - 1)}
+            disabled={page === 1}
+          >
+            Previous
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Page {page} of {Math.ceil(total / limit)}
+          </span>
+          <Button
+            variant="outline"
+            onClick={() => setPage(page + 1)}
+            disabled={page >= Math.ceil(total / limit)}
+          >
+            Next
+          </Button>
         </div>
       )}
     </div>

@@ -21,6 +21,7 @@ export async function GET() {
       completedOrders,
       totalRevenue,
       pendingPayments,
+      workOrderStatuses,
     ] = await Promise.all([
       prisma.user.count(),
       prisma.workOrder.count(),
@@ -30,6 +31,10 @@ export async function GET() {
         _sum: { finalCost: true },
       }),
       prisma.workOrder.count({ where: { paymentStatus: "PENDING" } }),
+      prisma.workOrder.groupBy({
+        by: ["status"],
+        _count: { status: true },
+      }),
     ]);
 
     const stats = {
@@ -38,6 +43,10 @@ export async function GET() {
       completedOrders,
       totalRevenue: Number(totalRevenue._sum.finalCost || 0),
       pendingPayments,
+      workOrderStatuses: workOrderStatuses.map((item) => ({
+        status: item.status,
+        count: item._count.status,
+      })),
     };
 
     // For regular admins, remove financial data
