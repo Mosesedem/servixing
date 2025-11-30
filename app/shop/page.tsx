@@ -10,11 +10,12 @@ import {
   Watch,
   Headphones,
   Monitor,
-  ArrowRight,
-  Star,
-  ShoppingBag,
   Package,
+  Star,
   ShoppingCart,
+  ArrowRight,
+  Wrench,
+  Truck,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -22,160 +23,84 @@ interface Product {
   id: string;
   name: string;
   price: number;
-  currency: string;
-  category: string;
   brand: string;
   model?: string;
   condition: string;
   stock: number;
   images: string[];
-  isActive: boolean;
 }
 
 export default function ShopPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState("");
 
   const categories = [
     {
       icon: Smartphone,
       name: "Smartphones",
-      description: "iPhone, Samsung, Google Pixel repairs",
-      itemCount: "150+ parts",
-      color: "text-blue-600 bg-blue-100 dark:bg-blue-900/30",
-      href: "/parts?category=smartphone",
       value: "smartphone",
+      color: "bg-blue-100 text-blue-600",
     },
     {
       icon: Laptop,
       name: "Laptops",
-      description: "MacBook, Dell, HP, Lenovo repairs",
-      itemCount: "200+ parts",
-      color: "text-purple-600 bg-purple-100 dark:bg-purple-900/30",
-      href: "/parts?category=laptop",
       value: "laptop",
+      color: "bg-purple-100 text-purple-600",
     },
     {
       icon: Tablet,
       name: "Tablets",
-      description: "iPad and Android tablet repairs",
-      itemCount: "80+ parts",
-      color: "text-green-600 bg-green-100 dark:bg-green-900/30",
-      href: "/parts?category=tablet",
       value: "tablet",
+      color: "bg-green-100 text-green-600",
     },
     {
       icon: Watch,
       name: "Smartwatches",
-      description: "Apple Watch, Samsung Galaxy Watch",
-      itemCount: "50+ parts",
-      color: "text-orange-600 bg-orange-100 dark:bg-orange-900/30",
-      href: "/parts?category=watch",
       value: "watch",
+      color: "bg-orange-100 text-orange-600",
     },
     {
       icon: Headphones,
-      name: "Audio Devices",
-      description: "AirPods, headphones, speakers",
-      itemCount: "40+ parts",
-      color: "text-pink-600 bg-pink-100 dark:bg-pink-900/30",
-      href: "/parts?category=audio",
+      name: "Audio",
       value: "audio",
+      color: "bg-pink-100 text-pink-600",
     },
     {
       icon: Monitor,
       name: "Desktops",
-      description: "iMac, PC repairs and upgrades",
-      itemCount: "120+ parts",
-      color: "text-indigo-600 bg-indigo-100 dark:bg-indigo-900/30",
-      href: "/parts?category=desktop",
       value: "desktop",
+      color: "bg-indigo-100 text-indigo-600",
     },
-  ];
-
-  const brands = [
-    { name: "Apple", logo: "/images/1.png" },
-    { name: "Samsung", logo: "/images/2.png" },
-    { name: "Dell", logo: "/images/1.png" },
-    { name: "HP", logo: "/images/1.png" },
-    { name: "Lenovo", logo: "ímages/1.png" },
-    { name: "Asus", logo: "/images/asus.png" },
-    { name: "Microsoft", logo: "/images/microsoft.png" },
-    { name: "Google", logo: "images/clear-logo.png" },
-    { name: "Sony", logo: "images/clear-logo.png" },
-    { name: "Canon", logo: "images/clear-logo.png" },
-    { name: "Toshiba", logo: "images/clear-logo.png" },
-    { name: "Xiaomi", logo: "images/clear-logo.png" },
   ];
 
   const popularDevices = [
+    { name: "iPhone 13 / 14", brand: "Apple", repairs: "3.2k+", rating: 4.9 },
+    { name: "MacBook Pro", brand: "Apple", repairs: "2.1k+", rating: 4.9 },
     {
-      name: "iPhone 13",
-      brand: "Apple",
-      rating: 4.8,
-      repairs: "2.5k+",
-      image: "📱",
-      imageUrl: "/images/iphone.png",
-    },
-    {
-      name: "MacBook Pro",
-      brand: "Apple",
-      rating: 4.9,
-      repairs: "1.8k+",
-      image: "💻",
-      imageUrl: "/images/1.png",
-    },
-    {
-      name: "Galaxy S23",
+      name: "Galaxy S23 / S24",
       brand: "Samsung",
+      repairs: "1.8k+",
       rating: 4.7,
-      repairs: "1.2k+",
-      image: "📱",
-      imageUrl: "/images/1.png",
     },
-    {
-      name: "iPad Air",
-      brand: "Apple",
-      rating: 4.8,
-      repairs: "900+",
-      image: "📱",
-      imageUrl: "/images/1.png",
-    },
-    {
-      name: "Dell XPS 15",
-      brand: "Dell",
-      rating: 4.6,
-      repairs: "750+",
-      image: "💻",
-      imageUrl: "/images/1.png",
-    },
-    {
-      name: "Surface Pro",
-      brand: "Microsoft",
-      rating: 4.7,
-      repairs: "650+",
-      image: "📱",
-      imageUrl: "/images/1.png",
-    },
+    { name: "iPad Pro / Air", brand: "Apple", repairs: "1.1k+", rating: 4.8 },
+    { name: "Dell XPS", brand: "Dell", repairs: "890+", rating: 4.7 },
+    { name: "Surface Pro", brand: "Microsoft", repairs: "720+", rating: 4.6 },
   ];
 
-  const features = [
-    {
-      icon: Package,
-      title: "Genuine Parts",
-      description: "OEM and high-quality aftermarket parts",
-    },
-    {
-      icon: Star,
-      title: "Expert Installation",
-      description: "Professional technician service available",
-    },
-    {
-      icon: ShoppingBag,
-      title: "Fast Delivery",
-      description: "Quick shipping on all part orders",
-    },
+  const brands = [
+    "Apple",
+    "Samsung",
+    "Dell",
+    "HP",
+    "Lenovo",
+    "Asus",
+    "Microsoft",
+    "Google",
+    "Sony",
+    "Xiaomi",
+    "Huawei",
+    "OnePlus",
   ];
 
   useEffect(() => {
@@ -183,16 +108,18 @@ export default function ShopPage() {
   }, [selectedCategory]);
 
   const fetchProducts = async () => {
+    setLoading(true);
     try {
       const params = new URLSearchParams();
       if (selectedCategory) params.set("category", selectedCategory);
       params.set("limit", "12");
 
-      const response = await fetch(`/api/products?${params}`);
-      const data = await response.json();
+      const res = await fetch(`/api/products?${params}`);
+      const data = await res.json();
       setProducts(data.products || []);
-    } catch (error) {
-      console.error("Failed to fetch products:", error);
+    } catch (err) {
+      console.error("Failed to load products");
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -200,161 +127,162 @@ export default function ShopPage() {
 
   const addToCart = async (productId: string) => {
     try {
-      const response = await fetch("/api/cart", {
+      const res = await fetch("/api/cart", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId, quantity: 1 }),
       });
 
-      if (response.ok) {
+      if (res.ok) {
         alert("Added to cart!");
       } else {
-        alert("Failed to add to cart");
+        alert("Could not add to cart. Try again.");
       }
-    } catch (error) {
-      console.error("Add to cart error:", error);
-      alert("Failed to add to cart");
+    } catch {
+      alert("Network error. Please check your connection.");
     }
   };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero Section */}
-      <section className="bg-linear-to-br from-orange-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 py-16 sm:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto">
-            <h1 className="text-4xl sm:text-5xl font-bold mb-6">
-              Browse Parts & Devices
-            </h1>
-            <p className="text-xl text-muted-foreground mb-8">
-              Find genuine replacement parts for all major device brands.
-              Whether you DIY or need professional installation, we've got you
-              covered.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/parts">
-                <Button size="lg" className="bg-orange-600 hover:bg-orange-700">
-                  Search Parts Catalog
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-              <Link href="/services">
-                <Button size="lg" variant="outline">
-                  View Services
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Categories Grid */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">Shop by Category</h2>
-          <p className="text-lg text-muted-foreground">
-            Find parts for your specific device type
+      {/* Hero */}
+      <section className="bg-gradient-to-br from-orange-50 via-white to-blue-50 py-16">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <h1 className="text-4xl sm:text-5xl font-bold mb-4">
+            Repair Parts & Accessories
+          </h1>
+          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+            Genuine and high-quality parts for phones, laptops, tablets, and
+            more.
           </p>
-        </div>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {categories.map((category) => (
-            <Card
-              key={category.name}
-              className={`p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer border-2 ${
-                selectedCategory === category.value
-                  ? "border-orange-200"
-                  : "hover:border-orange-200"
-              } dark:hover:border-orange-800`}
-              onClick={() => setSelectedCategory(category.value)}
-            >
-              <div
-                className={`inline-flex p-3 rounded-lg mb-4 ${category.color}`}
-              >
-                <category.icon className="h-8 w-8" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">{category.name}</h3>
-              <p className="text-muted-foreground mb-3">
-                {category.description}
-              </p>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-orange-600">
-                  {category.itemCount}
-                </span>
-                <ArrowRight className="h-5 w-5 text-muted-foreground" />
-              </div>
-            </Card>
-          ))}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/parts">
+              <Button size="lg" className="bg-orange-600 hover:bg-orange-700">
+                Browse All Parts <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
+            <Link href="/services">
+              <Button size="lg" variant="outline">
+                Book a Repair
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* Local Products */}
-      <section className="bg-gray-50 dark:bg-gray-900/50 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">
-              {selectedCategory
-                ? `${
-                    selectedCategory.charAt(0).toUpperCase() +
-                    selectedCategory.slice(1)
-                  } Products`
-                : "Featured Products"}
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              High-quality parts available for immediate purchase
-            </p>
+      {/* Categories */}
+      <section className="py-16 px-4">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-4">
+            Shop by Category
+          </h2>
+          <p className="text-center text-muted-foreground mb-10">
+            Choose your device type
+          </p>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            {categories.map((cat) => (
+              <button
+                key={cat.value}
+                onClick={() =>
+                  setSelectedCategory(
+                    selectedCategory === cat.value ? "" : cat.value
+                  )
+                }
+                className={`p-6 rounded-xl border-2 transition-all ${
+                  selectedCategory === cat.value
+                    ? "border-orange-500 bg-orange-50 shadow-md"
+                    : "border-gray-200 hover:border-orange-300 hover:shadow-sm"
+                }`}
+              >
+                <div
+                  className={`w-12 h-12 rounded-lg ${cat.color} flex items-center justify-center mx-auto mb-3`}
+                >
+                  <cat.icon className="h-7 w-7" />
+                </div>
+                <p className="font-semibold text-sm">{cat.name}</p>
+              </button>
+            ))}
           </div>
+        </div>
+      </section>
+
+      {/* Products Grid */}
+      <section className="bg-gray-50 py-16 px-4">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-10">
+            {selectedCategory
+              ? categories.find((c) => c.value === selectedCategory)?.name +
+                " Parts"
+              : "Featured Products"}
+          </h2>
 
           {loading ? (
-            <div className="text-center py-12">
-              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-orange-600 border-r-transparent"></div>
+            <div className="text-center py-20">
+              <div className="inline-block h-10 w-10 animate-spin rounded-full border-4 border-orange-600 border-t-transparent" />
               <p className="mt-4 text-muted-foreground">Loading products...</p>
             </div>
           ) : products.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="text-center py-20">
               <Package className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-xl font-semibold mb-2">No products found</h3>
-              <p className="text-muted-foreground">
-                Check back later for new products in this category.
+              <p className="text-xl text-muted-foreground">
+                No products found in this category yet.
               </p>
+              <Button
+                variant="outline"
+                className="mt-6"
+                onClick={() => setSelectedCategory("")}
+              >
+                Show All Products
+              </Button>
             </div>
           ) : (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
               {products.map((product) => (
                 <Card
                   key={product.id}
-                  className="p-4 hover:shadow-lg transition-shadow"
+                  className="overflow-hidden hover:shadow-lg transition-shadow"
                 >
-                  <div className="aspect-square relative mb-4 bg-gray-100 rounded-lg overflow-hidden">
-                    <Image
-                      src={product.images[0] || "/images/accessories.png"}
-                      alt={product.name}
-                      fill
-                      className="object-cover"
-                    />
+                  <div className="aspect-square relative bg-gray-100">
+                    {product.images[0] ? (
+                      <Image
+                        src={product.images[0]}
+                        alt={product.name}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 50vw, 25vw"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-4xl text-gray-300">
+                        <Wrench className="h-16 w-16" />
+                      </div>
+                    )}
                   </div>
-                  <h3 className="font-semibold mb-2 line-clamp-2">
-                    {product.name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {product.brand} {product.model}
-                  </p>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-lg font-bold text-orange-600">
-                      ₦{product.price.toLocaleString()}
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      {product.condition}
-                    </span>
+                  <div className="p-4">
+                    <h3 className="font-semibold text-sm line-clamp-2 h-10">
+                      {product.name}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {product.brand} {product.model}
+                    </p>
+                    <div className="flex justify-between items-end mt-3">
+                      <span className="text-lg font-bold text-orange-600">
+                        ₦{product.price.toLocaleString()}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {product.condition}
+                      </span>
+                    </div>
+                    <Button
+                      onClick={() => addToCart(product.id)}
+                      disabled={product.stock === 0}
+                      className="w-full mt-4"
+                      size="sm"
+                    >
+                      <ShoppingCart className="h-4 w-4 mr-2" />
+                      {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
+                    </Button>
                   </div>
-                  <Button
-                    onClick={() => addToCart(product.id)}
-                    className="w-full"
-                    disabled={product.stock === 0}
-                  >
-                    <ShoppingCart className="h-4 w-4 mr-2" />
-                    {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
-                  </Button>
                 </Card>
               ))}
             </div>
@@ -363,102 +291,89 @@ export default function ShopPage() {
       </section>
 
       {/* Popular Devices */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">Popular Devices</h2>
-          <p className="text-lg text-muted-foreground">
-            Most frequently repaired devices at Servixing
-          </p>
-        </div>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {popularDevices.map((device) => (
-            <Card
-              key={device.name}
-              className="p-6 hover:shadow-lg transition-shadow"
-            >
-              <div className="flex items-start gap-4">
-                {/* <div className="text-5xl">{device.image}</div> */}
-                <Image
-                  src={device.imageUrl}
-                  alt={device.name}
-                  height={48}
-                  width={48}
-                />
-
-                <div className="flex-1">
-                  <h3 className="text-lg font-bold mb-1">{device.name}</h3>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    {device.brand}
-                  </p>
-
-                  <div className="flex items-center gap-4 text-sm">
-                    <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-orange-600 text-orange-600" />
-                      <span className="font-medium">{device.rating}</span>
-                    </div>
-                    <span className="text-muted-foreground">
-                      {device.repairs} repairs
-                    </span>
-                  </div>
+      <section className="py-16 px-4">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-10">
+            Most Repaired Devices
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+            {popularDevices.map((device) => (
+              <Card
+                key={device.name}
+                className="p-6 text-center hover:shadow-md transition-shadow"
+              >
+                <div className="bg-gray-200 border-2 border-dashed rounded-xl w-20 h-20 mx-auto mb-4" />
+                <h3 className="font-bold">{device.name}</h3>
+                <p className="text-sm text-muted-foreground">{device.brand}</p>
+                <div className="flex items-center justify-center gap-3 mt-3 text-sm">
+                  <span className="flex items-center gap-1">
+                    <Star className="h-4 w-4 fill-orange-500 text-orange-500" />
+                    {device.rating}
+                  </span>
+                  <span className="text-muted-foreground">
+                    • {device.repairs} repairs
+                  </span>
                 </div>
-              </div>
-
-              <div className="mt-4 pt-4 border-t">
-                <Link href={`/parts?q=${device.name}&brand=${device.brand}`}>
-                  <Button variant="outline" className="w-full">
-                    Find Parts
-                    <ArrowRight className="ml-2 h-4 w-4" />
+                <Link href={`/parts?q=${device.name}`}>
+                  <Button variant="outline" className="w-full mt-4 text-sm">
+                    View Parts
                   </Button>
                 </Link>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="bg-gray-50 dark:bg-gray-900/50 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-3 gap-8">
-            {features.map((feature) => (
-              <div key={feature.title} className="text-center">
-                <div className="inline-flex p-4 rounded-full bg-orange-100 dark:bg-orange-900/30 mb-4">
-                  <feature.icon className="h-8 w-8 text-orange-600" />
-                </div>
-                <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
-                <p className="text-muted-foreground">{feature.description}</p>
-              </div>
+              </Card>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Brands */}
-      <section className="bg-linear-to-br from-orange-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Supported Brands</h2>
-            <p className="text-lg text-muted-foreground">
-              We repair devices from all major manufacturers
+      {/* Features */}
+      <section className="bg-gray-50 py-16 px-4">
+        <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-8 text-center">
+          <div>
+            <div className="inline-flex p-4 bg-orange-100 rounded-full mb-4">
+              <Package className="h-8 w-8 text-orange-600" />
+            </div>
+            <h3 className="text-xl font-bold mb-2">Genuine Parts</h3>
+            <p className="text-muted-foreground">
+              OEM & high-quality replacements
             </p>
           </div>
+          <div>
+            <div className="inline-flex p-4 bg-orange-100 rounded-full mb-4">
+              <Truck className="h-8 w-8 text-orange-600" />
+            </div>
+            <h3 className="text-xl font-bold mb-2">Fast Delivery</h3>
+            <p className="text-muted-foreground">Same-day dispatch in Lagos</p>
+          </div>
+          <div>
+            <div className="inline-flex p-4 bg-orange-100 rounded-full mb-4">
+              <Star className="h-8 w-8 text-orange-600" />
+            </div>
+            <h3 className="text-xl font-bold mb-2">Trusted Quality</h3>
+            <p className="text-muted-foreground">
+              90-day warranty on all parts
+            </p>
+          </div>
+        </div>
+      </section>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+      {/* Brands */}
+      <section className="py-16 px-4">
+        <div className="max-w-7xl mx-auto text-center">
+          <h2 className="text-3xl font-bold mb-4">
+            We Support All Major Brands
+          </h2>
+          <p className="text-muted-foreground mb-10">
+            Click any brand to see available parts
+          </p>
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-8">
             {brands.map((brand) => (
-              <Link key={brand.name} href={`/parts?brand=${brand.name}`}>
-                <Card className="p-6 text-center hover:shadow-lg transition-shadow cursor-pointer">
-                  <div className="flex">
-                    <Image
-                      src={brand.logo}
-                      alt={brand.name}
-                      height={24}
-                      width={24}
-                      className="mr-3"
-                    />
-                    <p className="font-semibold">{brand.name}</p>
-                  </div>
-                </Card>
+              <Link key={brand} href={`/parts?brand=${brand}`}>
+                <div className="text-center group cursor-pointer">
+                  <div className="bg-gray-200 border-2 border-dashed rounded-xl w-20 h-20 mx-auto mb-3 group-hover:border-orange-400 transition-colors" />
+                  <p className="font-medium text-sm group-hover:text-orange-600">
+                    {brand}
+                  </p>
+                </div>
               </Link>
             ))}
           </div>
@@ -467,33 +382,21 @@ export default function ShopPage() {
 
       {/* CTA */}
       <section className="bg-orange-600 text-white py-16">
-        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto text-center px-4">
           <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-            Can't Find What You Need?
+            Can't Find Your Part?
           </h2>
           <p className="text-lg mb-8 opacity-90">
-            Contact our support team and we'll help you find the right part for
-            your device.
+            Our team can source any part — just let us know what you need.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/support">
-              <Button
-                size="lg"
-                className="bg-white text-orange-600 hover:bg-gray-100"
-              >
-                Contact Support
-              </Button>
-            </Link>
-            <Link href="/parts">
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-2 border-white text-white hover:bg-white/10"
-              >
-                Browse All Parts
-              </Button>
-            </Link>
-          </div>
+          <Link href="/support">
+            <Button
+              size="lg"
+              className="bg-white text-orange-600 hover:bg-gray-100 font-bold"
+            >
+              Contact Us Now
+            </Button>
+          </Link>
         </div>
       </section>
     </div>

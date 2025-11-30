@@ -3,10 +3,17 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Loader2, CreditCard, Smartphone, Banknote } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import {
+  Loader2,
+  CreditCard,
+  Smartphone,
+  Banknote,
+  Shield,
+  CheckCircle2,
+  RefreshCw,
+} from "lucide-react";
 
 interface PaymentData {
   amount: number;
@@ -30,41 +37,36 @@ export default function CentralizedCheckoutPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // Get payment ID from URL params
     const paymentId = searchParams.get("paymentId");
 
     if (!paymentId) {
-      setError("Invalid payment ID");
+      setError("No payment session found. Please start checkout again.");
       setLoading(false);
       return;
     }
 
-    // Fetch payment data from API
     const fetchPaymentData = async () => {
       try {
         const response = await fetch(`/api/payments/${paymentId}`);
         if (!response.ok) {
-          const errorData = await response.json();
+          const err = await response.json();
           throw new Error(
-            errorData.error?.message || "Failed to fetch payment data"
+            err.error?.message || "Payment session expired or invalid"
           );
         }
-        const data = await response.json();
-        const payment = data.data;
+        const { data } = await response.json();
 
         setPaymentData({
-          amount: parseFloat(payment.amount),
-          email: payment.user.email,
-          workOrderId: payment.workOrderId || undefined,
-          description: payment.metadata?.description || "Payment for service",
+          amount: parseFloat(data.amount),
+          email: data.user.email,
+          workOrderId: data.workOrderId || undefined,
+          description: data.metadata?.description || "Payment for order",
           existingPaymentId: paymentId,
-          metadata: payment.metadata || {},
+          metadata: data.metadata || {},
         });
-        setSelectedProvider(payment.provider || "paystack");
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to load payment data"
-        );
+        setSelectedProvider(data.provider || "paystack");
+      } catch (err: any) {
+        setError(err.message || "Failed to load payment details");
       } finally {
         setLoading(false);
       }
@@ -80,33 +82,23 @@ export default function CentralizedCheckoutPage() {
     setError("");
 
     try {
-      let response;
-      let data;
+      let initResponse;
 
       if (paymentData.existingPaymentId) {
-        // Update existing payment with selected provider
-        response = await fetch(
+        // Update provider first
+        const updateRes = await fetch(
           `/api/payments/${paymentData.existingPaymentId}/update-provider`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              provider: selectedProvider,
-            }),
+            body: JSON.stringify({ provider: selectedProvider }),
           }
         );
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(
-            errorData.error?.message || "Failed to update payment provider"
-          );
-        }
+        if (!updateRes.ok) throw new Error("Failed to update payment method");
 
-        data = await response.json();
-
-        // Now initialize the payment with the updated provider
-        response = await fetch("/api/payments/initialize", {
+        // Then re-initialize with selected provider
+        initResponse = await fetch("/api/payments/initialize", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -120,18 +112,8 @@ export default function CentralizedCheckoutPage() {
             },
           }),
         });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(
-            errorData.error?.message || "Payment initialization failed"
-          );
-        }
-
-        data = await response.json();
       } else {
-        // Initialize new payment
-        response = await fetch("/api/payments/initialize", {
+        initResponse = await fetch("/api/payments/initialize", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -139,75 +121,79 @@ export default function CentralizedCheckoutPage() {
             provider: selectedProvider,
           }),
         });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(
-            errorData.error?.message || "Payment initialization failed"
-          );
-        }
-
-        data = await response.json();
       }
 
-      // Redirect to payment provider
-      if (data.data?.authorizationUrl) {
-        window.location.href = data.data.authorizationUrl;
+      if (!initResponse.ok) {
+        const err = await initResponse.json();
+        throw new Error(err.error?.message || "Payment failed to start");
+      }
+
+      const result = await initResponse.json();
+      if (result.data?.authorizationUrl) {
+        window.location.href = result.data.authorizationUrl;
       } else {
-        throw new Error("No authorization URL received");
+        throw new Error("Payment gateway not responding");
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+    } catch (err: any) {
+      setError(err.message || "Something went wrong. Please try again.");
       setProcessing(false);
     }
   };
 
-  const getProviderIcon = (provider: string) => {
-    switch (provider) {
-      case "paystack":
-        return <CreditCard className="h-6 w-6" />;
-      case "etegram":
-        return <Smartphone className="h-6 w-6" />;
-      case "flutterwave":
-        return <Banknote className="h-6 w-6" />;
-      default:
-        return <CreditCard className="h-6 w-6" />;
-    }
-  };
+  const providers = [
+    {
+      value: "paystack",
+      name: "Paystack",
+      icon: <CreditCard className="h-7 w-7" />,
+      desc: "Card, Bank Transfer, USSD, Apple Pay",
+      color: "text-green-600",
+    },
+    {
+      value: "etegram",
+      name: "Etegram",
+      icon: <Smartphone className="h-7 w-7" />,
+      desc: "Instant bank transfer • No card needed",
+      color: "text-blue-600",
+    },
+    {
+      value: "flutterwave",
+      name: "Flutterwave",
+      icon: <Banknote className="h-7 w-7" />,
+      desc: "Cards, Mobile Money, Bank Account",
+      color: "text-orange-600",
+    },
+  ] as const;
 
-  const getProviderDescription = (provider: string) => {
-    switch (provider) {
-      case "paystack":
-        return "Secure payment processing with card, bank transfer, and mobile money";
-      case "etegram":
-        return "Bank transfer payment with instant confirmation";
-      case "flutterwave":
-        return "Multiple payment options including cards, mobile money, and bank transfers";
-      default:
-        return "";
-    }
-  };
-
+  // Loading State
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading payment details...</p>
+          <Loader2 className="h-12 w-12 animate-spin text-orange-600 mx-auto mb-4" />
+          <p className="text-lg text-muted-foreground">
+            Preparing secure checkout...
+          </p>
         </div>
       </div>
     );
   }
 
+  // Error State
   if (error && !paymentData) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="p-6 max-w-md w-full">
-          <div className="text-center">
-            <div className="text-red-600 mb-4">⚠️</div>
-            <h2 className="text-xl font-semibold mb-2">Payment Error</h2>
-            <p className="text-muted-foreground mb-4">{error}</p>
-            <Button onClick={() => router.back()}>Go Back</Button>
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <Card className="max-w-md w-full p-8 text-center">
+          <div className="text-red-600 text-5xl mb-4">Warning</div>
+          <h2 className="text-2xl font-bold mb-3">Payment Session Error</h2>
+          <p className="text-muted-foreground mb-6">{error}</p>
+          <div className="space-y-3">
+            <Button onClick={() => router.back()} className="w-full">
+              Return to Previous Page
+            </Button>
+            <Button variant="outline" onClick={() => window.location.reload()}>
+              <RefreshCw className="h-5 w-5 mr-2" />
+              Retry
+            </Button>
           </div>
         </Card>
       </div>
@@ -215,128 +201,134 @@ export default function CentralizedCheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background py-20">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Complete Your Payment</h1>
-          <p className="text-muted-foreground">
-            Choose your preferred payment method
+    <div className="min-h-screen bg-background py-8 px-4 sm:py-12">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-10">
+          <h1 className="text-3xl sm:text-4xl font-bold mb-3">
+            Complete Your Payment
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            Secure • Fast • Trusted by thousands
           </p>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Payment Summary */}
+          {/* Payment Summary Sidebar */}
           <div className="lg:col-span-1">
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Payment Summary</h2>
-              <div className="space-y-4">
+            <Card className="p-6 sticky top-6 shadow-xl border-orange-100">
+              <div className="flex items-center gap-3 mb-6">
+                <Shield className="h-8 w-8 text-orange-600" />
+                <h2 className="text-2xl font-bold">Order Summary</h2>
+              </div>
+
+              <div className="space-y-5 text-lg">
                 {paymentData?.description && (
                   <div>
                     <p className="text-sm text-muted-foreground">Description</p>
-                    <p className="font-medium">{paymentData.description}</p>
+                    <p className="font-semibold">{paymentData.description}</p>
                   </div>
                 )}
                 <div>
-                  <p className="text-sm text-muted-foreground">Email</p>
-                  <p className="font-medium">{paymentData?.email}</p>
+                  <p className="text-sm text-muted-foreground">Paying with</p>
+                  <p className="font-medium truncate">{paymentData?.email}</p>
                 </div>
-                <div className="border-t pt-4">
-                  <div className="flex justify-between text-lg font-semibold">
-                    <span>Total</span>
-                    <span>₦{paymentData?.amount.toLocaleString()}</span>
+
+                <div className="border-t pt-5">
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-xl font-semibold">Total Amount</span>
+                    <span className="text-3xl font-bold text-orange-600">
+                      ₦{paymentData?.amount.toLocaleString()}
+                    </span>
                   </div>
+                </div>
+
+                <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-4 py-3 rounded-lg">
+                  <CheckCircle2 className="h-5 w-5" />
+                  <span>SSL Secured • No card details stored</span>
                 </div>
               </div>
             </Card>
           </div>
 
-          {/* Payment Options */}
+          {/* Payment Method Selection */}
           <div className="lg:col-span-2">
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-6">
-                Select Payment Method
+            <Card className="p-6 sm:p-8">
+              <h2 className="text-2xl font-bold mb-8 flex items-center gap-3">
+                <CreditCard className="h-8 w-8 text-orange-600" />
+                Choose Payment Method
               </h2>
 
               <RadioGroup
                 value={selectedProvider}
-                onValueChange={(value) => setSelectedProvider(value as any)}
+                onValueChange={(v) => setSelectedProvider(v as any)}
                 className="space-y-4"
               >
-                {/* Paystack */}
-                <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                  <RadioGroupItem value="paystack" id="paystack" />
-                  <Label htmlFor="paystack" className="flex-1 cursor-pointer">
-                    <div className="flex items-center gap-3">
-                      {getProviderIcon("paystack")}
-                      <div>
-                        <div className="font-medium">Paystack</div>
-                        <div className="text-sm text-muted-foreground">
-                          {getProviderDescription("paystack")}
-                        </div>
-                      </div>
-                    </div>
-                  </Label>
-                </div>
-
-                {/* Etegram */}
-                <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                  <RadioGroupItem value="etegram" id="etegram" />
-                  <Label htmlFor="etegram" className="flex-1 cursor-pointer">
-                    <div className="flex items-center gap-3">
-                      {getProviderIcon("etegram")}
-                      <div>
-                        <div className="font-medium">Etegram</div>
-                        <div className="text-sm text-muted-foreground">
-                          {getProviderDescription("etegram")}
-                        </div>
-                      </div>
-                    </div>
-                  </Label>
-                </div>
-
-                {/* Flutterwave */}
-                <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                  <RadioGroupItem value="flutterwave" id="flutterwave" />
-                  <Label
-                    htmlFor="flutterwave"
-                    className="flex-1 cursor-pointer"
+                {providers.map((provider) => (
+                  <label
+                    key={provider.value}
+                    className="flex items-center gap-4 p-5 border-2 rounded-xl hover:border-orange-300 hover:bg-orange-50/50 transition-all cursor-pointer has-[:checked]:border-orange-600 has-[:checked]:bg-orange-50"
                   >
-                    <div className="flex items-center gap-3">
-                      {getProviderIcon("flutterwave")}
-                      <div>
-                        <div className="font-medium">Flutterwave</div>
-                        <div className="text-sm text-muted-foreground">
-                          {getProviderDescription("flutterwave")}
-                        </div>
+                    <RadioGroupItem
+                      value={provider.value}
+                      id={provider.value}
+                      className="sr-only"
+                    />
+                    <div
+                      className={`p-3 rounded-full ${provider.color} bg-white shadow-md`}
+                    >
+                      {provider.icon}
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-semibold text-lg">
+                        {provider.name}
+                      </div>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        {provider.desc}
                       </div>
                     </div>
-                  </Label>
-                </div>
+                    <div className="h-6 w-6 rounded-full border-2 border-muted has-[:checked]:border-orange-600 has-[:checked]:bg-orange-600 flex items-center justify-center">
+                      {selectedProvider === provider.value && (
+                        <div className="h-3 w-3 bg-white rounded-full" />
+                      )}
+                    </div>
+                  </label>
+                ))}
               </RadioGroup>
 
               {error && (
-                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-red-700 text-sm">{error}</p>
+                <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                  {error}
                 </div>
               )}
 
               <Button
                 onClick={handlePayment}
                 disabled={processing}
-                className="w-full mt-6 bg-orange-600 hover:bg-orange-700 h-12 text-base font-semibold"
+                size="lg"
+                className="w-full mt-8 h-14 text-lg font-bold bg-orange-600 hover:bg-orange-700 shadow-lg"
               >
                 {processing ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Processing...
+                    <Loader2 className="mr-3 h-5 w-5 animate-spin" />
+                    Redirecting to{" "}
+                    {selectedProvider.charAt(0).toUpperCase() +
+                      selectedProvider.slice(1)}
+                    ...
                   </>
                 ) : (
-                  `Pay ₦${paymentData?.amount.toLocaleString()} with ${
-                    selectedProvider.charAt(0).toUpperCase() +
-                    selectedProvider.slice(1)
-                  }`
+                  <>
+                    Pay ₦{paymentData?.amount.toLocaleString()} with{" "}
+                    {selectedProvider.charAt(0).toUpperCase() +
+                      selectedProvider.slice(1)}
+                  </>
                 )}
               </Button>
+
+              <p className="text-center text-xs text-muted-foreground mt-6">
+                You will be redirected to a secure page to complete your
+                payment.
+              </p>
             </Card>
           </div>
         </div>
