@@ -43,6 +43,7 @@ export default function ShopPage() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
 
   const categories = [
     {
@@ -145,6 +146,7 @@ export default function ShopPage() {
 
   useEffect(() => {
     fetchProducts();
+    fetchCartCount();
   }, [selectedCategory]);
 
   const fetchProducts = async () => {
@@ -165,6 +167,17 @@ export default function ShopPage() {
     }
   };
 
+  const fetchCartCount = async () => {
+    try {
+      const res = await fetch("/api/cart");
+      const data = await res.json();
+      setCartCount(data.items?.length || 0);
+    } catch (err) {
+      console.error("Failed to load cart count");
+      setCartCount(0);
+    }
+  };
+
   const addToCart = async (productId: string) => {
     try {
       const res = await fetch("/api/cart", {
@@ -175,6 +188,7 @@ export default function ShopPage() {
 
       if (res.ok) {
         alert("Added to cart!");
+        fetchCartCount();
       } else {
         alert("Could not add to cart. Try again.");
       }
@@ -514,9 +528,11 @@ export default function ShopPage() {
       <Link href="/cart">
         <button className="fixed bottom-6 right-6 bg-orange-600 text-white p-4 rounded-full shadow-lg hover:bg-orange-700 z-50 flex items-center justify-center">
           <ShoppingCart className="h-6 w-6 mr-3" /> Cart
-          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center">
-            0
-          </span>
+          {cartCount > 0 && (
+            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center">
+              {cartCount}
+            </span>
+          )}
         </button>
       </Link>
     </div>
