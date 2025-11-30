@@ -60,35 +60,51 @@ export default function CheckoutPage() {
     setProcessing(true);
 
     try {
-      // Redirect to centralized checkout with payment details
-      const params = new URLSearchParams({
-        amount: total.toString(),
-        email: formData.email,
-        description: `Cart checkout - ${cartItems.length} item(s)`,
-        metadata: JSON.stringify({
-          name: formData.name,
-          phone: formData.phone,
-          address:
-            formData.deliveryType === "delivery" ? formData.address : undefined,
-          city:
-            formData.deliveryType === "delivery" ? formData.city : undefined,
-          state:
-            formData.deliveryType === "delivery" ? formData.state : undefined,
-          postalCode:
-            formData.deliveryType === "delivery"
-              ? formData.postalCode
-              : undefined,
-          deliveryType: formData.deliveryType,
-          notes: formData.notes,
-          cartItems: cartItems.map((item) => ({
-            id: item.id,
-            productId: item.product.id,
-            quantity: item.quantity,
-          })),
+      const response = await fetch("/api/payments/initialize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: total,
+          email: formData.email,
+          provider: "paystack",
+          metadata: {
+            description: `Cart checkout - ${cartItems.length} item(s)`,
+            name: formData.name,
+            phone: formData.phone,
+            address:
+              formData.deliveryType === "delivery"
+                ? formData.address
+                : undefined,
+            city:
+              formData.deliveryType === "delivery" ? formData.city : undefined,
+            state:
+              formData.deliveryType === "delivery" ? formData.state : undefined,
+            postalCode:
+              formData.deliveryType === "delivery"
+                ? formData.postalCode
+                : undefined,
+            deliveryType: formData.deliveryType,
+            notes: formData.notes,
+            cartItems: cartItems.map((item) => ({
+              id: item.id,
+              productId: item.product.id,
+              quantity: item.quantity,
+            })),
+          },
         }),
       });
 
-      router.push(`/payment/checkout?${params.toString()}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.error?.message || "Payment initialization failed"
+        );
+      }
+
+      const data = await response.json();
+
+      // Redirect to centralized checkout with payment ID
+      router.push(`/payment/checkout?paymentId=${data.paymentId}`);
     } catch (error) {
       console.error("Checkout error:", error);
       alert("Failed to process checkout");

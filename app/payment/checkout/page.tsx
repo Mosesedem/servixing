@@ -30,36 +30,47 @@ export default function CentralizedCheckoutPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // Get payment data from URL params
-    const amount = searchParams.get("amount");
-    const email = searchParams.get("email");
-    const workOrderId = searchParams.get("workOrderId");
-    const description = searchParams.get("description");
-    const existingPaymentId = searchParams.get("existingPaymentId");
-    const metadata = searchParams.get("metadata");
+    // Get payment ID from URL params
+    const paymentId = searchParams.get("paymentId");
 
-    if (!amount || !email) {
-      setError("Invalid payment parameters");
+    if (!paymentId) {
+      setError("Invalid payment ID");
       setLoading(false);
       return;
     }
 
-    let parsedMetadata = {};
-    try {
-      parsedMetadata = metadata ? JSON.parse(metadata) : {};
-    } catch (e) {
-      console.warn("Failed to parse metadata:", e);
-    }
+    // Fetch payment data from API
+    const fetchPaymentData = async () => {
+      try {
+        const response = await fetch(`/api/payments/${paymentId}`);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(
+            errorData.error?.message || "Failed to fetch payment data"
+          );
+        }
+        const data = await response.json();
+        const payment = data.data;
 
-    setPaymentData({
-      amount: parseFloat(amount),
-      email,
-      workOrderId: workOrderId || undefined,
-      description: description || undefined,
-      existingPaymentId: existingPaymentId || undefined,
-      metadata: parsedMetadata,
-    });
-    setLoading(false);
+        setPaymentData({
+          amount: parseFloat(payment.amount),
+          email: payment.user.email,
+          workOrderId: payment.workOrderId || undefined,
+          description: payment.metadata?.description || "Payment for service",
+          existingPaymentId: paymentId,
+          metadata: payment.metadata || {},
+        });
+        setSelectedProvider(payment.provider || "paystack");
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to load payment data"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPaymentData();
   }, [searchParams]);
 
   const handlePayment = async () => {

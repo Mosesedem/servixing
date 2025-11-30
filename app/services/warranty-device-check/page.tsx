@@ -139,6 +139,7 @@ export default function WarrantyDeviceCheckPage() {
           email,
           provider: "paystack", // Default to paystack for now, can be made configurable
           metadata: {
+            description: "Warranty & Device Status Check",
             service: "warranty-check",
             ...formData,
           },
@@ -154,18 +155,8 @@ export default function WarrantyDeviceCheckPage() {
 
       const data = await res.json();
 
-      // Redirect to centralized checkout instead of directly to Paystack
-      const params = new URLSearchParams({
-        amount: "100",
-        email,
-        description: "Warranty & Device Status Check",
-        metadata: JSON.stringify({
-          service: "warranty-check",
-          ...formData,
-        }),
-      });
-
-      window.location.href = `/payment/checkout?${params.toString()}`;
+      // Redirect to centralized checkout with payment ID
+      window.location.href = `/payment/checkout?paymentId=${data.paymentId}`;
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
       setLoading(false);

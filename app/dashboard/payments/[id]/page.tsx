@@ -52,21 +52,8 @@ export default function PaymentReceiptPage() {
     setPaying(true);
 
     try {
-      // Redirect to centralized checkout
-      const params = new URLSearchParams({
-        amount: payment.amount.toString(),
-        email: payment.user.email,
-        workOrderId: payment.workOrder?.id || "",
-        description: payment.workOrder
-          ? `Payment for work order ${payment.workOrder.device.brand} ${payment.workOrder.device.model}`
-          : `Payment ${payment.id}`,
-        metadata: JSON.stringify({
-          paymentId: payment.id,
-          existingPayment: true,
-        }),
-      });
-
-      window.location.href = `/payment/checkout?${params.toString()}`;
+      // Redirect to centralized checkout with existing payment ID
+      window.location.href = `/payment/checkout?paymentId=${paymentId}`;
     } catch (e) {
       alert("Failed to redirect to payment");
     } finally {
