@@ -128,17 +128,6 @@ export function Navbar() {
                 <span>Shop</span>
               </Link>
 
-              {/* Cart */}
-              <Link
-                href="/cart"
-                className={`nav-link px-3 py-2 text-sm font-medium rounded-lg ${
-                  isActive("/cart") ? "active" : "text-muted-foreground"
-                }`}
-              >
-                <ShoppingCart className="h-4 w-4" />
-                <span>Cart</span>
-              </Link>
-
               {/* Services dropdown */}
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild>
@@ -395,17 +384,6 @@ export function Navbar() {
               <ShoppingBag className="h-6 w-6" />
               <span>Shop</span>
             </Link>
-            <Link
-              href="/cart"
-              className={`flex flex-col items-center gap-2 px-4 py-4 text-sm font-medium rounded-lg transition-all duration-300 ${
-                isActive("/cart")
-                  ? "bg-brand-orange-light text-brand-orange"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
-              }`}
-            >
-              <ShoppingCart className="h-6 w-6" />
-              <span>Cart</span>
-            </Link>
           </div>
 
           {/* Services Section */}
@@ -558,6 +536,16 @@ export function Navbar() {
           </div>
         </div>
       </div>
+
+      {/* Floating Cart */}
+      <Link href="/cart">
+        <button className="fixed bottom-6 right-6 bg-orange-600 text-white p-4 rounded-full shadow-lg hover:bg-orange-700 z-50 flex items-center justify-center">
+          <ShoppingCart className="h-6 w-6" />
+          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center">
+            0
+          </span>
+        </button>
+      </Link>
     </>
   );
 }

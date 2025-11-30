@@ -4,6 +4,13 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
   Smartphone,
   Laptop,
   Tablet,
@@ -34,6 +41,8 @@ export default function ShopPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const categories = [
     {
@@ -75,17 +84,48 @@ export default function ShopPage() {
   ];
 
   const popularDevices = [
-    { name: "iPhone 13 / 14", brand: "Apple", repairs: "3.2k+", rating: 4.9 },
-    { name: "MacBook Pro", brand: "Apple", repairs: "2.1k+", rating: 4.9 },
+    {
+      name: "iPhone 13 / 14",
+      brand: "Apple",
+      repairs: "3.2k+",
+      rating: 4.9,
+      imageUrl: "https://via.placeholder.com/80x80?text=iPhone",
+    },
+    {
+      name: "MacBook Pro",
+      brand: "Apple",
+      repairs: "2.1k+",
+      rating: 4.9,
+      imageUrl: "https://via.placeholder.com/80x80?text=MacBook",
+    },
     {
       name: "Galaxy S23 / S24",
       brand: "Samsung",
       repairs: "1.8k+",
       rating: 4.7,
+      imageUrl: "https://via.placeholder.com/80x80?text=Galaxy",
     },
-    { name: "iPad Pro / Air", brand: "Apple", repairs: "1.1k+", rating: 4.8 },
-    { name: "Dell XPS", brand: "Dell", repairs: "890+", rating: 4.7 },
-    { name: "Surface Pro", brand: "Microsoft", repairs: "720+", rating: 4.6 },
+    {
+      name: "iPad Pro / Air",
+      brand: "Apple",
+      repairs: "1.1k+",
+      rating: 4.8,
+      imageUrl: "https://via.placeholder.com/80x80?text=iPad",
+    },
+    {
+      name: "Dell XPS",
+      brand: "Dell",
+      repairs: "890+",
+      rating: 4.7,
+      imageUrl: "https://via.placeholder.com/80x80?text=Dell",
+    },
+    {
+      name: "Surface Pro",
+      brand: "Microsoft",
+      repairs: "720+",
+      rating: 4.6,
+      imageUrl: "https://via.placeholder.com/80x80?text=Surface",
+    },
   ];
 
   const brands = [
@@ -282,6 +322,17 @@ export default function ShopPage() {
                       <ShoppingCart className="h-4 w-4 mr-2" />
                       {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
                     </Button>
+                    <Button
+                      onClick={() => {
+                        setSelectedProduct(product);
+                        setSheetOpen(true);
+                      }}
+                      variant="outline"
+                      className="w-full mt-2"
+                      size="sm"
+                    >
+                      View Details
+                    </Button>
                   </div>
                 </Card>
               ))}
@@ -302,7 +353,13 @@ export default function ShopPage() {
                 key={device.name}
                 className="p-6 text-center hover:shadow-md transition-shadow"
               >
-                <div className="bg-gray-200 border-2 border-dashed rounded-xl w-20 h-20 mx-auto mb-4" />
+                <Image
+                  src={device.imageUrl}
+                  alt={device.name}
+                  width={80}
+                  height={80}
+                  className="w-20 h-20 rounded-xl object-cover"
+                />
                 <h3 className="font-bold">{device.name}</h3>
                 <p className="text-sm text-muted-foreground">{device.brand}</p>
                 <div className="flex items-center justify-center gap-3 mt-3 text-sm">
@@ -399,6 +456,60 @@ export default function ShopPage() {
           </Link>
         </div>
       </section>
+
+      {/* Product Details Dialog */}
+      <Dialog open={sheetOpen} onOpenChange={setSheetOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Product Details</DialogTitle>
+          </DialogHeader>
+          {selectedProduct && (
+            <div className="mt-6 space-y-4">
+              <div className="aspect-square relative bg-gray-100 rounded-lg overflow-hidden">
+                {selectedProduct.images[0] ? (
+                  <Image
+                    src={selectedProduct.images[0]}
+                    alt={selectedProduct.name}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-4xl text-gray-300">
+                    <Wrench className="h-16 w-16" />
+                  </div>
+                )}
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold">
+                  {selectedProduct.name}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {selectedProduct.brand} {selectedProduct.model}
+                </p>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-2xl font-bold text-orange-600">
+                  ₦{selectedProduct.price.toLocaleString()}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  {selectedProduct.condition}
+                </span>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Stock: {selectedProduct.stock} available
+              </div>
+              <Button
+                onClick={() => addToCart(selectedProduct.id)}
+                disabled={selectedProduct.stock === 0}
+                className="w-full"
+              >
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                {selectedProduct.stock === 0 ? "Out of Stock" : "Add to Cart"}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

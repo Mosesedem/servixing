@@ -23,6 +23,7 @@ import { Drawer } from "vaul";
 import { useSession } from "next-auth/react";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { ImageUpload } from "@/components/image-upload";
+import { useSearchParams, useRouter } from "next/navigation";
 
 interface Part {
   id: string;
@@ -38,6 +39,8 @@ interface Part {
 
 export default function PartsSearchPage() {
   const { data: session } = useSession();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [brand, setBrand] = useState("Apple");
   const [parts, setParts] = useState<Part[]>([]);
@@ -161,7 +164,7 @@ export default function PartsSearchPage() {
 
       const combinedParts = [...localParts, ...ebayParts];
       setParts(combinedParts);
-      setTotal(combinedParts.length); // For simplicity, since pagination is tricky with combined results
+      setTotal(localData.total + (ebayData.total || 0));
 
       // ensure page reflects backend echo
       if (typeof ebayData.page === "number") setPage(ebayData.page);
@@ -406,6 +409,29 @@ ${
     loadFeatured();
   }, []);
 
+  // Sync state with URL params
+  useEffect(() => {
+    const q = searchParams.get("q") || "";
+    const b = searchParams.get("brand") || "Apple";
+    const s = searchParams.get("sort") || "best_match";
+    const c = searchParams.get("condition") || "any";
+    const minP = searchParams.get("minPrice") || "";
+    const maxP = searchParams.get("maxPrice") || "";
+    const p = parseInt(searchParams.get("page") || "1");
+
+    setQuery(q);
+    setBrand(b);
+    setSort(s as any);
+    setCondition(c as any);
+    setMinPrice(minP);
+    setMaxPrice(maxP);
+    setPage(p);
+
+    if (q) {
+      handleSearch(p);
+    }
+  }, [searchParams]);
+
   // Responsive: use drawer on mobile, sheet (dialog) on desktop
   useEffect(() => {
     const mql = window.matchMedia("(min-width: 1024px)");
@@ -488,6 +514,15 @@ ${
               <Button
                 onClick={() => {
                   setPage(1);
+                  const params = new URLSearchParams();
+                  params.set("q", query);
+                  params.set("brand", brand);
+                  params.set("sort", sort);
+                  params.set("condition", condition);
+                  if (minPrice) params.set("minPrice", minPrice);
+                  if (maxPrice) params.set("maxPrice", maxPrice);
+                  params.set("page", "1");
+                  router.push(`/parts?${params.toString()}`);
                   handleSearch(1);
                 }}
                 disabled={loading || !query.trim()}
@@ -579,6 +614,15 @@ ${
                     variant="outline"
                     onClick={() => {
                       setPage(1);
+                      const params = new URLSearchParams();
+                      params.set("q", query);
+                      params.set("brand", brand);
+                      params.set("sort", sort);
+                      params.set("condition", condition);
+                      if (minPrice) params.set("minPrice", minPrice);
+                      if (maxPrice) params.set("maxPrice", maxPrice);
+                      params.set("page", "1");
+                      router.push(`/parts?${params.toString()}`);
                       handleSearch(1);
                     }}
                     disabled={loading || !query.trim()}
