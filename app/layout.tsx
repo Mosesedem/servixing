@@ -58,7 +58,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body className={livvic.className + " text-bold"}>
+      <body className={livvic.className + " text-bold pt-16"}>
         <Providers session={session}>
           <ConditionalNavbar />
 
