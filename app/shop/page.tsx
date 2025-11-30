@@ -35,6 +35,7 @@ interface Product {
   brand: string;
   model?: string;
   condition: string;
+  description?: string;
   stock: number;
   images: string[];
 }
