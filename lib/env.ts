@@ -26,6 +26,14 @@ const envSchema = z.object({
   PAYSTACK_SECRET_KEY: z.string().startsWith("sk_"),
   NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY: z.string().startsWith("pk_"),
 
+  // Etegram
+  ETEGRAM_PROJECT_ID: z.string().optional(),
+  ETEGRAM_PUBLIC_KEY: z.string().optional(),
+
+  // Flutterwave
+  FLUTTERWAVE_ACCESS_TOKEN: z.string().optional(),
+  FLUTTERWAVE_SECRET_HASH: z.string().optional(),
+
   // Redis/Upstash (optional for MVP)
   UPSTASH_REDIS_REST_URL: z.string().url().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().optional(),

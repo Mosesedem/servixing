@@ -60,14 +60,38 @@ export default function CheckoutPage() {
     setProcessing(true);
 
     try {
-      // Here you would integrate with Paystack or other payment processor
-      // For now, just show success
-      alert("Order placed successfully! (Payment integration pending)");
-      router.push("/dashboard");
+      // Redirect to centralized checkout with payment details
+      const params = new URLSearchParams({
+        amount: total.toString(),
+        email: formData.email,
+        description: `Cart checkout - ${cartItems.length} item(s)`,
+        metadata: JSON.stringify({
+          name: formData.name,
+          phone: formData.phone,
+          address:
+            formData.deliveryType === "delivery" ? formData.address : undefined,
+          city:
+            formData.deliveryType === "delivery" ? formData.city : undefined,
+          state:
+            formData.deliveryType === "delivery" ? formData.state : undefined,
+          postalCode:
+            formData.deliveryType === "delivery"
+              ? formData.postalCode
+              : undefined,
+          deliveryType: formData.deliveryType,
+          notes: formData.notes,
+          cartItems: cartItems.map((item) => ({
+            id: item.id,
+            productId: item.product.id,
+            quantity: item.quantity,
+          })),
+        }),
+      });
+
+      router.push(`/payment/checkout?${params.toString()}`);
     } catch (error) {
       console.error("Checkout error:", error);
-      alert("Failed to process order");
-    } finally {
+      alert("Failed to process checkout");
       setProcessing(false);
     }
   };

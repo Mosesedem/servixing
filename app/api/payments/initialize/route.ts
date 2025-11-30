@@ -30,6 +30,7 @@ export const POST = asyncHandler(async (req: Request) => {
     amount: data.amount,
     email: data.email,
     userId: userId,
+    provider: data.provider,
     metadata: data.metadata,
   });
 

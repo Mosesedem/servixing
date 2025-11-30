@@ -7,6 +7,7 @@ export const initializePaymentSchema = z.object({
   workOrderId: z.string().cuid("Invalid work order ID").optional(),
   amount: z.number().positive("Amount must be positive"),
   email: z.string().email("Invalid email address"),
+  provider: z.enum(["paystack", "etegram", "flutterwave"]).default("paystack"),
   metadata: z.record(z.any()).optional(),
 });
 

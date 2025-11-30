@@ -50,24 +50,25 @@ export default function PaymentReceiptPage() {
   const handlePayNow = async () => {
     if (!payment) return;
     setPaying(true);
+
     try {
-      const res = await fetch("/api/payments/initialize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          workOrderId: payment.workOrder?.id,
-          amount: payment.amount,
-          metadata: { paymentId: payment.id },
+      // Redirect to centralized checkout
+      const params = new URLSearchParams({
+        amount: payment.amount.toString(),
+        email: payment.user.email,
+        workOrderId: payment.workOrder?.id || "",
+        description: payment.workOrder
+          ? `Payment for work order ${payment.workOrder.device.brand} ${payment.workOrder.device.model}`
+          : `Payment ${payment.id}`,
+        metadata: JSON.stringify({
+          paymentId: payment.id,
+          existingPayment: true,
         }),
       });
-      const json = await res.json();
-      if (json.success) {
-        window.location.href = json.data.authorizationUrl;
-      } else {
-        alert(json.error?.message || "Failed to initialize payment");
-      }
+
+      window.location.href = `/payment/checkout?${params.toString()}`;
     } catch (e) {
-      alert("Failed to initialize payment");
+      alert("Failed to redirect to payment");
     } finally {
       setPaying(false);
     }

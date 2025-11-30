@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     // });
 
     // Process webhook event
-    await paymentService.handleWebhook(payload.event, payload.data);
+    await paymentService.handleWebhook("paystack", payload.event, payload.data);
 
     logger.info(`Webhook processed successfully: ${payload.event}`);
     return NextResponse.json({ received: true }, { status: 200 });

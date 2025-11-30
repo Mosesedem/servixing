@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
       amount: data.amount,
       email,
       userId: user.id,
+      provider: data.provider,
       metadata: data.metadata,
     });
 

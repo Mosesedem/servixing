@@ -137,6 +137,7 @@ export default function WarrantyDeviceCheckPage() {
         body: JSON.stringify({
           amount: 100, // ₦100
           email,
+          provider: "paystack", // Default to paystack for now, can be made configurable
           metadata: {
             service: "warranty-check",
             ...formData,
@@ -153,13 +154,18 @@ export default function WarrantyDeviceCheckPage() {
 
       const data = await res.json();
 
-      // Redirect to Paystack payment page
-      if (data.data?.authorizationUrl || data.authorizationUrl) {
-        window.location.href =
-          data.data?.authorizationUrl || data.authorizationUrl;
-      } else {
-        throw new Error("No authorization URL received");
-      }
+      // Redirect to centralized checkout instead of directly to Paystack
+      const params = new URLSearchParams({
+        amount: "100",
+        email,
+        description: "Warranty & Device Status Check",
+        metadata: JSON.stringify({
+          service: "warranty-check",
+          ...formData,
+        }),
+      });
+
+      window.location.href = `/payment/checkout?${params.toString()}`;
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
       setLoading(false);
