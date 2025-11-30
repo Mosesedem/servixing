@@ -97,7 +97,7 @@ export function PartsSearch({ deviceBrand, deviceModel }: PartsSearchProps) {
                         {part.seller} · {part.condition}
                       </p>
                       <p className="text-sm font-semibold text-orange-600">
-                        ${part.price.toFixed(2)}
+                        ${Number(part.price).toFixed(2)}
                       </p>
                     </div>
                     <a

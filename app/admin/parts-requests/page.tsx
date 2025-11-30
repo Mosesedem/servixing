@@ -200,7 +200,8 @@ export default function AdminPartsRequests() {
 
                   <div className="flex flex-wrap items-center gap-3 text-sm">
                     <span className="font-semibold">
-                      {part.currency} {part.price.toFixed(2)} x {part.quantity}
+                      {part.currency} {Number(part.price).toFixed(2)} x{" "}
+                      {part.quantity}
                     </span>
                     <span
                       className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(

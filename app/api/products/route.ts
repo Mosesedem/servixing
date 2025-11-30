@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import Fuse from "fuse.js";
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,34 +11,52 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    const where: any = {
+    const baseWhere: any = {
       isActive: true,
     };
 
-    if (category) where.category = category;
-    if (brand) where.brand = brand;
+    if (category) baseWhere.category = category;
+    if (brand) baseWhere.brand = brand;
+
+    let products: any[];
+    let total: number;
+    let hasMore: boolean;
+
     if (search) {
-      where.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { description: { contains: search, mode: "insensitive" } },
-        { brand: { contains: search, mode: "insensitive" } },
-        { model: { contains: search, mode: "insensitive" } },
-      ];
+      // Fetch all matching products for fuzzy search
+      const allProducts = await db.product.findMany({
+        where: baseWhere,
+        orderBy: { createdAt: "desc" },
+      });
+
+      const fuse = new Fuse(allProducts, {
+        keys: ["name", "description", "brand", "model"],
+        threshold: 0.3, // Adjust for fuzziness (0 = exact, 1 = very fuzzy)
+        includeScore: true,
+      });
+
+      const fuseResults = fuse.search(search);
+      const results = fuseResults.map((r) => r.item);
+
+      total = results.length;
+      products = results.slice(offset, offset + limit);
+      hasMore = offset + limit < total;
+    } else {
+      products = await db.product.findMany({
+        where: baseWhere,
+        take: limit,
+        skip: offset,
+        orderBy: { createdAt: "desc" },
+      });
+
+      total = await db.product.count({ where: baseWhere });
+      hasMore = offset + limit < total;
     }
-
-    const products = await db.product.findMany({
-      where,
-      take: limit,
-      skip: offset,
-      orderBy: { createdAt: "desc" },
-    });
-
-    const total = await db.product.count({ where });
 
     return NextResponse.json({
       products,
       total,
-      hasMore: offset + limit < total,
+      hasMore,
     });
   } catch (error) {
     console.error("Products API error:", error);

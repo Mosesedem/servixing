@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Drawer } from "vaul";
 import {
   Smartphone,
   Laptop,
@@ -44,6 +46,10 @@ export default function ShopPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   const categories = [
     {
@@ -147,18 +153,21 @@ export default function ShopPage() {
   useEffect(() => {
     fetchProducts();
     fetchCartCount();
-  }, [selectedCategory]);
+  }, [selectedCategory, searchQuery, currentPage]);
 
   const fetchProducts = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
       if (selectedCategory) params.set("category", selectedCategory);
+      if (searchQuery) params.set("q", searchQuery);
       params.set("limit", "12");
+      params.set("offset", String((currentPage - 1) * 12));
 
       const res = await fetch(`/api/products?${params}`);
       const data = await res.json();
       setProducts(data.products || []);
+      setTotalPages(Math.ceil(data.total / 12));
     } catch (err) {
       console.error("Failed to load products");
       setProducts([]);
@@ -209,6 +218,23 @@ export default function ShopPage() {
             Genuine and high-quality parts for phones, laptops, tablets, and
             more.
           </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+            <Input
+              placeholder="Search products..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="max-w-md"
+            />
+            <Button
+              onClick={() => {
+                setCurrentPage(1);
+                fetchProducts();
+              }}
+              variant="outline"
+            >
+              Search
+            </Button>
+          </div>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/parts">
               <Button size="lg" className="bg-orange-600 hover:bg-orange-700">
@@ -339,6 +365,7 @@ export default function ShopPage() {
                     <Button
                       onClick={() => {
                         setSelectedProduct(product);
+                        setSelectedImageIndex(0);
                         setSheetOpen(true);
                       }}
                       variant="outline"
@@ -354,6 +381,33 @@ export default function ShopPage() {
           )}
         </div>
       </section>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <section className="py-8 px-4">
+          <div className="max-w-7xl mx-auto flex justify-center">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Popular Devices */}
       <section className="py-16 px-4">
@@ -471,59 +525,108 @@ export default function ShopPage() {
         </div>
       </section>
 
-      {/* Product Details Dialog */}
-      <Dialog open={sheetOpen} onOpenChange={setSheetOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Product Details</DialogTitle>
-          </DialogHeader>
-          {selectedProduct && (
-            <div className="mt-6 space-y-4">
-              <div className="aspect-square relative bg-gray-100 rounded-lg overflow-hidden">
-                {selectedProduct.images[0] ? (
-                  <Image
-                    src={selectedProduct.images[0]}
-                    alt={selectedProduct.name}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-4xl text-gray-300">
-                    <Wrench className="h-16 w-16" />
-                  </div>
-                )}
-              </div>
-              <div>
-                <h3 className="text-xl font-semibold">
-                  {selectedProduct.name}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {selectedProduct.brand} {selectedProduct.model}
-                </p>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-2xl font-bold text-orange-600">
-                  ₦{selectedProduct.price.toLocaleString()}
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  {selectedProduct.condition}
-                </span>
-              </div>
-              <div className="text-sm text-muted-foreground">
-                Stock: {selectedProduct.stock} available
-              </div>
-              <Button
-                onClick={() => addToCart(selectedProduct.id)}
-                disabled={selectedProduct.stock === 0}
-                className="w-full"
+      {/* Product Details Sheet */}
+      <Drawer.Root open={sheetOpen} onOpenChange={setSheetOpen}>
+        <Drawer.Portal>
+          <Drawer.Overlay className="fixed inset-0 bg-black/50" />
+          <Drawer.Content className="fixed right-0 top-0 h-full w-full max-w-md bg-background shadow-xl">
+            <div className="p-4 border-b flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Product Details</h2>
+              <button
+                onClick={() => setSheetOpen(false)}
+                className="text-sm text-muted-foreground hover:text-foreground"
               >
-                <ShoppingCart className="h-4 w-4 mr-2" />
-                {selectedProduct.stock === 0 ? "Out of Stock" : "Add to Cart"}
-              </Button>
+                Close
+              </button>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+            <div className="p-4 space-y-4 overflow-y-auto h-[calc(100%-56px)]">
+              {selectedProduct && (
+                <>
+                  {/* Image Gallery */}
+                  <div className="space-y-2">
+                    <div className="aspect-square relative bg-gray-100 rounded-lg overflow-hidden">
+                      {selectedProduct.images[selectedImageIndex] ? (
+                        <Image
+                          src={selectedProduct.images[selectedImageIndex]}
+                          alt={selectedProduct.name}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-full text-4xl text-gray-300">
+                          <Wrench className="h-16 w-16" />
+                        </div>
+                      )}
+                    </div>
+                    {selectedProduct.images.length > 1 && (
+                      <div className="flex gap-2 overflow-x-auto pb-2">
+                        {selectedProduct.images.map((img, index) => (
+                          <div
+                            key={index}
+                            className={`flex-shrink-0 w-16 h-16 relative bg-gray-100 rounded overflow-hidden cursor-pointer border-2 ${
+                              index === selectedImageIndex
+                                ? "border-orange-500"
+                                : "border-transparent"
+                            }`}
+                            onClick={() => setSelectedImageIndex(index)}
+                          >
+                            <Image
+                              src={img}
+                              alt={`${selectedProduct.name} ${index + 1}`}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <h3 className="text-xl font-semibold">
+                      {selectedProduct.name}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedProduct.brand} {selectedProduct.model}
+                    </p>
+                  </div>
+
+                  {selectedProduct.description && (
+                    <div>
+                      <h4 className="font-semibold mb-2">Description</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedProduct.description}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-2xl font-bold text-orange-600">
+                      ₦{selectedProduct.price.toLocaleString()}
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      {selectedProduct.condition}
+                    </span>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Stock: {selectedProduct.stock} available
+                  </div>
+                  <Button
+                    onClick={() => addToCart(selectedProduct.id)}
+                    disabled={selectedProduct.stock === 0}
+                    className="w-full"
+                  >
+                    <ShoppingCart className="h-4 w-4 mr-2" />
+                    {selectedProduct.stock === 0
+                      ? "Out of Stock"
+                      : "Add to Cart"}
+                  </Button>
+                </>
+              )}
+            </div>
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
       {/* Floating Cart */}
       <Link href="/cart">
         <button className="fixed bottom-6 right-6 bg-orange-600 text-white p-4 rounded-full shadow-lg hover:bg-orange-700 z-50 flex items-center justify-center">

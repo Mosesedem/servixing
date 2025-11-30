@@ -148,7 +148,7 @@ export default function PartsSearchPage() {
       const localParts = localData.products.map((p: any) => ({
         id: p.id,
         title: p.name,
-        price: p.price,
+        price: Number(p.price),
         condition: p.condition,
         imageUrl: p.images[0] || "",
         seller: "Servixing",
@@ -710,7 +710,7 @@ ${
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1 text-orange-600 font-bold text-xl">
                         <DollarSign className="h-5 w-5" />
-                        {part.price.toFixed(2)}
+                        {Number(part.price).toFixed(2)}
                       </div>
                       <span className="text-sm px-2 py-1 rounded-full bg-muted">
                         {part.condition}
@@ -837,7 +837,7 @@ ${
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1 text-orange-600 font-bold text-xl">
                         <DollarSign className="h-5 w-5" />
-                        {part.price.toFixed(2)}
+                        {Number(part.price).toFixed(2)}
                       </div>
                       <span className="text-sm px-2 py-1 rounded-full bg-muted">
                         {part.condition}
@@ -1000,7 +1000,7 @@ ${
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1 text-orange-600 font-bold text-2xl">
                       <DollarSign className="h-6 w-6" />{" "}
-                      {selected.price.toFixed(2)}
+                      {Number(selected.price).toFixed(2)}
                     </div>
                     <span className="text-sm px-2 py-1 rounded-full bg-muted">
                       {selected.condition}
@@ -1061,7 +1061,7 @@ ${
                   <div className="mt-4 flex items-center gap-2">
                     <div className="flex items-center gap-1 text-orange-600 font-bold text-2xl">
                       <DollarSign className="h-6 w-6" />{" "}
-                      {selected.price.toFixed(2)}
+                      {Number(selected.price).toFixed(2)}
                     </div>
                     <span className="text-sm px-2 py-1 rounded-full bg-muted">
                       {selected.condition}
