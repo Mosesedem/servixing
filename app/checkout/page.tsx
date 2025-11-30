@@ -116,7 +116,7 @@ export default function CheckoutPage() {
       }
 
       const data = await response.json();
-      router.push(`/payment/checkout?paymentId=${data.paymentId}`);
+      router.push(`/payment/checkout?paymentId=${data.data.paymentId}`);
     } catch (error: any) {
       console.error("Checkout error:", error);
       alert(error.message || "Failed to process checkout. Please try again.");
