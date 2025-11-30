@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
@@ -32,14 +32,14 @@ export async function GET(request: NextRequest) {
     if (status === "active") where.isActive = true;
     if (status === "inactive") where.isActive = false;
 
-    const products = await prisma.product.findMany({
+    const products = await db.product.findMany({
       where,
       take: limit,
       skip: offset,
       orderBy: { createdAt: "desc" },
     });
 
-    const total = await prisma.product.count({ where });
+    const total = await db.product.count({ where });
 
     return NextResponse.json({
       products,
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const product = await prisma.product.create({
+    const product = await db.product.create({
       data: {
         name,
         description,

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { db } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,14 +25,14 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    const products = await prisma.product.findMany({
+    const products = await db.product.findMany({
       where,
       take: limit,
       skip: offset,
       orderBy: { createdAt: "desc" },
     });
 
-    const total = await prisma.product.count({ where });
+    const total = await db.product.count({ where });
 
     return NextResponse.json({
       products,

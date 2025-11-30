@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
@@ -9,7 +9,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const product = await prisma.product.findUnique({
+    const product = await db.product.findUnique({
       where: { id },
     });
 
@@ -53,7 +53,7 @@ export async function PUT(
       isActive,
     } = body;
 
-    const product = await prisma.product.update({
+    const product = await db.product.update({
       where: { id },
       data: {
         name,
@@ -91,7 +91,7 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    await prisma.product.delete({
+    await db.product.delete({
       where: { id },
     });
 

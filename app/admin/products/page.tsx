@@ -36,6 +36,7 @@ import {
   Edit,
 } from "lucide-react";
 import Image from "next/image";
+import { ImageUpload } from "@/components/image-upload";
 
 interface Product {
   id: string;
@@ -64,6 +65,11 @@ export default function AdminProductsPage() {
   const [filterBrand, setFilterBrand] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [customCategory, setCustomCategory] = useState("");
+  const [customBrand, setCustomBrand] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [bulkLoading, setBulkLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -75,6 +81,7 @@ export default function AdminProductsPage() {
     condition: "new",
     stock: "",
     images: [] as string[],
+    imageFiles: [] as File[],
     isActive: true,
   });
 
@@ -127,11 +134,39 @@ export default function AdminProductsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+
     try {
+      let imageUrls = formData.images;
+
+      // Upload new images if any
+      if (formData.imageFiles.length > 0) {
+        const formDataUpload = new FormData();
+        formData.imageFiles.forEach((file) => {
+          formDataUpload.append("images", file);
+        });
+
+        const uploadResponse = await fetch("/api/admin/products/upload", {
+          method: "POST",
+          body: formDataUpload,
+        });
+
+        if (uploadResponse.ok) {
+          const uploadData = await uploadResponse.json();
+          imageUrls = [...imageUrls, ...uploadData.data.urls];
+        } else {
+          const errorData = await uploadResponse.json();
+          setError(errorData.error?.message || "Failed to upload images");
+          return;
+        }
+      }
+
       const data = {
         ...formData,
         price: parseFloat(formData.price),
         stock: parseInt(formData.stock),
+        images: imageUrls,
       };
 
       const url = editingProduct
@@ -149,9 +184,15 @@ export default function AdminProductsPage() {
         fetchProducts();
         setDialogOpen(false);
         resetForm();
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || "Failed to save product");
       }
     } catch (error) {
       console.error("Failed to save product:", error);
+      setError("An unexpected error occurred");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -183,9 +224,13 @@ export default function AdminProductsPage() {
       condition: "new",
       stock: "",
       images: [],
+      imageFiles: [],
       isActive: true,
     });
+    setCustomCategory("");
+    setCustomBrand("");
     setEditingProduct(null);
+    setError(null);
   };
 
   const openEditDialog = (product: Product) => {
@@ -201,8 +246,13 @@ export default function AdminProductsPage() {
       condition: product.condition,
       stock: product.stock.toString(),
       images: product.images,
+      imageFiles: [],
       isActive: product.isActive,
     });
+    setCustomCategory(
+      categories.includes(product.category) ? "" : product.category
+    );
+    setCustomBrand(brands.includes(product.brand) ? "" : product.brand);
     setDialogOpen(true);
   };
 
@@ -235,6 +285,7 @@ export default function AdminProductsPage() {
     )
       return;
 
+    setBulkLoading(true);
     try {
       await Promise.all(
         selectedProducts.map((id) =>
@@ -245,10 +296,13 @@ export default function AdminProductsPage() {
       setSelectedProducts([]);
     } catch (error) {
       console.error("Failed to delete products:", error);
+    } finally {
+      setBulkLoading(false);
     }
   };
 
   const handleBulkStatusUpdate = async (isActive: boolean) => {
+    setBulkLoading(true);
     try {
       await Promise.all(
         selectedProducts.map((id) =>
@@ -263,6 +317,8 @@ export default function AdminProductsPage() {
       setSelectedProducts([]);
     } catch (error) {
       console.error("Failed to update products:", error);
+    } finally {
+      setBulkLoading(false);
     }
   };
 
@@ -319,6 +375,11 @@ export default function AdminProductsPage() {
                 {editingProduct ? "Edit Product" : "Add New Product"}
               </DialogTitle>
             </DialogHeader>
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -374,10 +435,22 @@ export default function AdminProductsPage() {
                     Category *
                   </label>
                   <Select
-                    value={formData.category}
-                    onValueChange={(value) =>
-                      setFormData((prev) => ({ ...prev, category: value }))
+                    value={
+                      categories.includes(formData.category)
+                        ? formData.category
+                        : "other"
                     }
+                    onValueChange={(value) => {
+                      if (value === "other") {
+                        setFormData((prev) => ({
+                          ...prev,
+                          category: customCategory,
+                        }));
+                      } else {
+                        setFormData((prev) => ({ ...prev, category: value }));
+                        setCustomCategory("");
+                      }
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
@@ -388,18 +461,44 @@ export default function AdminProductsPage() {
                           {cat}
                         </SelectItem>
                       ))}
+                      <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
+                  {formData.category !== "" &&
+                    !categories.includes(formData.category) && (
+                      <Input
+                        value={formData.category}
+                        onChange={(e) => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            category: e.target.value,
+                          }));
+                          setCustomCategory(e.target.value);
+                        }}
+                        placeholder="Enter custom category"
+                        className="mt-2"
+                      />
+                    )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">
                     Brand *
                   </label>
                   <Select
-                    value={formData.brand}
-                    onValueChange={(value) =>
-                      setFormData((prev) => ({ ...prev, brand: value }))
+                    value={
+                      brands.includes(formData.brand) ? formData.brand : "other"
                     }
+                    onValueChange={(value) => {
+                      if (value === "other") {
+                        setFormData((prev) => ({
+                          ...prev,
+                          brand: customBrand,
+                        }));
+                      } else {
+                        setFormData((prev) => ({ ...prev, brand: value }));
+                        setCustomBrand("");
+                      }
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select brand" />
@@ -410,8 +509,24 @@ export default function AdminProductsPage() {
                           {brand}
                         </SelectItem>
                       ))}
+                      <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
+                  {formData.brand !== "" &&
+                    !brands.includes(formData.brand) && (
+                      <Input
+                        value={formData.brand}
+                        onChange={(e) => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            brand: e.target.value,
+                          }));
+                          setCustomBrand(e.target.value);
+                        }}
+                        placeholder="Enter custom brand"
+                        className="mt-2"
+                      />
+                    )}
                 </div>
               </div>
 
@@ -470,26 +585,50 @@ export default function AdminProductsPage() {
 
               <div>
                 <label className="block text-sm font-medium mb-1">Images</label>
-                {formData.images.map((url, index) => (
-                  <div key={index} className="flex gap-2 mb-2">
-                    <Input
-                      value={url}
-                      onChange={(e) => updateImageUrl(index, e.target.value)}
-                      placeholder="Image URL"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => removeImageUrl(index)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                <ImageUpload
+                  value={formData.imageFiles}
+                  onChange={(files) =>
+                    setFormData((prev) => ({ ...prev, imageFiles: files }))
+                  }
+                  maxFiles={10}
+                  maxSize={5}
+                />
+                {formData.images.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-sm text-gray-600 mb-2">
+                      Existing Images:
+                    </p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+                      {formData.images.map((url, index) => (
+                        <div key={index} className="relative group">
+                          <div className="aspect-square rounded-lg overflow-hidden border border-gray-200">
+                            <Image
+                              src={url}
+                              alt={`Existing ${index + 1}`}
+                              width={80}
+                              height={80}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                images: prev.images.filter(
+                                  (_, i) => i !== index
+                                ),
+                              }))
+                            }
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ))}
-                <Button type="button" variant="outline" onClick={addImageUrl}>
-                  <ImageIcon className="h-4 w-4 mr-2" />
-                  Add Image
-                </Button>
+                )}
               </div>
 
               <div className="flex items-center space-x-2">
@@ -517,8 +656,13 @@ export default function AdminProductsPage() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit">
-                  {editingProduct ? "Update" : "Create"} Product
+                <Button type="submit" disabled={submitting}>
+                  {submitting
+                    ? "Saving..."
+                    : editingProduct
+                    ? "Update"
+                    : "Create"}{" "}
+                  Product
                 </Button>
               </div>
             </form>
@@ -593,17 +737,29 @@ export default function AdminProductsPage() {
           <Button
             variant="outline"
             onClick={() => handleBulkStatusUpdate(true)}
+            disabled={bulkLoading}
           >
-            Activate Selected ({selectedProducts.length})
+            {bulkLoading
+              ? "Processing..."
+              : `Activate Selected (${selectedProducts.length})`}
           </Button>
           <Button
             variant="outline"
             onClick={() => handleBulkStatusUpdate(false)}
+            disabled={bulkLoading}
           >
-            Deactivate Selected ({selectedProducts.length})
+            {bulkLoading
+              ? "Processing..."
+              : `Deactivate Selected (${selectedProducts.length})`}
           </Button>
-          <Button variant="destructive" onClick={handleBulkDelete}>
-            Delete Selected ({selectedProducts.length})
+          <Button
+            variant="destructive"
+            onClick={handleBulkDelete}
+            disabled={bulkLoading}
+          >
+            {bulkLoading
+              ? "Deleting..."
+              : `Delete Selected (${selectedProducts.length})`}
           </Button>
         </div>
       )}
