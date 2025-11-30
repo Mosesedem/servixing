@@ -536,16 +536,6 @@ export function Navbar() {
           </div>
         </div>
       </div>
-
-      {/* Floating Cart */}
-      <Link href="/cart">
-        <button className="fixed bottom-6 right-6 bg-orange-600 text-white p-4 rounded-full shadow-lg hover:bg-orange-700 z-50 flex items-center justify-center">
-          <ShoppingCart className="h-6 w-6" />
-          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center">
-            0
-          </span>
-        </button>
-      </Link>
     </>
   );
 }
