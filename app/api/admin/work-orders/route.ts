@@ -19,12 +19,22 @@ export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
     const status = searchParams.get("status");
     const paymentStatus = searchParams.get("paymentStatus");
+    const search = searchParams.get("search");
     const limit = searchParams.get("limit");
     const page = searchParams.get("page");
 
     const where: any = {};
     if (status) where.status = status;
     if (paymentStatus) where.paymentStatus = paymentStatus;
+    if (search) {
+      where.OR = [
+        { user: { name: { contains: search, mode: "insensitive" } } },
+        { user: { email: { contains: search, mode: "insensitive" } } },
+        { device: { brand: { contains: search, mode: "insensitive" } } },
+        { device: { model: { contains: search, mode: "insensitive" } } },
+        { issueDescription: { contains: search, mode: "insensitive" } },
+      ];
+    }
 
     const take = limit ? parseInt(limit) : 10;
     const skip = page ? (parseInt(page) - 1) * take : 0;

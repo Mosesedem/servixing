@@ -39,6 +39,7 @@ export default function AdminWorkOrders() {
   const [updating, setUpdating] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [total, setTotal] = useState(0);
@@ -49,7 +50,7 @@ export default function AdminWorkOrders() {
 
   useEffect(() => {
     fetchWorkOrders();
-  }, [statusFilter, paymentFilter, page]);
+  }, [statusFilter, paymentFilter, searchTerm, page]);
 
   const fetchWorkOrders = async () => {
     try {
@@ -57,6 +58,7 @@ export default function AdminWorkOrders() {
       const params = new URLSearchParams();
       if (statusFilter) params.append("status", statusFilter);
       if (paymentFilter) params.append("paymentStatus", paymentFilter);
+      if (searchTerm) params.append("search", searchTerm);
       params.append("page", page.toString());
       params.append("limit", limit.toString());
       if (params.toString()) url += "?" + params.toString();
@@ -148,6 +150,12 @@ export default function AdminWorkOrders() {
 
       {/* Filters */}
       <div className="flex gap-4 mb-6">
+        <Input
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Search by user, device, or issue..."
+          className="w-[300px]"
+        />
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="All Statuses" />
