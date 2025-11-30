@@ -29,6 +29,7 @@ import {
   User,
   UserCog2,
   UserCog,
+  ShoppingCart,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
@@ -125,6 +126,17 @@ export function Navbar() {
               >
                 <ShoppingBag className="h-4 w-4" />
                 <span>Shop</span>
+              </Link>
+
+              {/* Cart */}
+              <Link
+                href="/cart"
+                className={`nav-link px-3 py-2 text-sm font-medium rounded-lg ${
+                  isActive("/cart") ? "active" : "text-muted-foreground"
+                }`}
+              >
+                <ShoppingCart className="h-4 w-4" />
+                <span>Cart</span>
               </Link>
 
               {/* Services dropdown */}
@@ -382,6 +394,17 @@ export function Navbar() {
             >
               <ShoppingBag className="h-6 w-6" />
               <span>Shop</span>
+            </Link>
+            <Link
+              href="/cart"
+              className={`flex flex-col items-center gap-2 px-4 py-4 text-sm font-medium rounded-lg transition-all duration-300 ${
+                isActive("/cart")
+                  ? "bg-brand-orange-light text-brand-orange"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+              }`}
+            >
+              <ShoppingCart className="h-6 w-6" />
+              <span>Cart</span>
             </Link>
           </div>
 

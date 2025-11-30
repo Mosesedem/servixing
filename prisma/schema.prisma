@@ -104,6 +104,7 @@ model User {
   notifications  NotificationLog[]
   auditLogs      AuditLog[]
   addresses      Address[]
+  carts          Cart[]
 
   @@index([email])
   @@index([role])
@@ -568,4 +569,63 @@ model FeaturedItem {
   @@index([active])
   @@index([createdAt])
   @@map("featured_items")
+}
+
+// Local Products
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?  @db.Text
+  price       Decimal  @db.Decimal(10, 2)
+  currency    String   @default("NGN")
+  category    String // smartphone, laptop, tablet, etc.
+  brand       String
+  model       String?
+  condition   String   @default("new") // new, used, refurbished
+  stock       Int      @default(0)
+  images      String[] // URLs
+  isActive    Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  cartItems CartItem[]
+
+  @@index([category])
+  @@index([brand])
+  @@index([isActive])
+  @@map("products")
+}
+
+// Cart Models
+model Cart {
+  id     String @id @default(cuid())
+  userId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CartItem[]
+
+  @@index([userId])
+  @@map("carts")
+}
+
+model CartItem {
+  id        String @id @default(cuid())
+  cartId    String
+  productId String
+  quantity  Int    @default(1)
+
+  // Relations
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, productId])
+  @@index([cartId])
+  @@index([productId])
+  @@map("cart_items")
 }

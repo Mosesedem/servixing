@@ -14,6 +14,7 @@ import {
   Wrench,
   Package,
   Shield,
+  ShoppingBag,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -63,6 +64,11 @@ export function AdminSidebar() {
       href: "/admin/parts-requests",
       icon: Package,
       label: "Parts Requests",
+    },
+    {
+      href: "/admin/products",
+      icon: ShoppingBag,
+      label: "Products",
     },
     {
       href: "/admin/warranty-checks",

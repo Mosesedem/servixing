@@ -16,6 +16,7 @@ import {
   AlertCircle,
   CheckCircle,
   Info,
+  ShoppingCart,
 } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Drawer } from "vaul";
@@ -31,6 +32,8 @@ interface Part {
   imageUrl: string;
   seller: string;
   ebayUrl: string;
+  type?: "local" | "ebay";
+  stock?: number;
 }
 
 export default function PartsSearchPage() {
@@ -114,25 +117,54 @@ export default function PartsSearchPage() {
     setSearched(true);
     try {
       const effectivePage = pageOverride ?? page;
-      const url = new URL("/api/parts/search", window.location.origin);
-      url.searchParams.set("q", query);
-      url.searchParams.set("brand", brand);
-      url.searchParams.set("page", String(effectivePage));
-      url.searchParams.set("perPage", String(perPage));
-      url.searchParams.set("sort", sort);
-      url.searchParams.set("condition", condition);
-      if (minPrice) url.searchParams.set("minPrice", minPrice);
-      if (maxPrice) url.searchParams.set("maxPrice", maxPrice);
 
-      const response = await fetch(url.toString());
+      // Fetch local products
+      const localParams = new URLSearchParams();
+      localParams.set("q", query);
+      localParams.set("brand", brand);
+      localParams.set("limit", String(perPage));
+      localParams.set("offset", String((effectivePage - 1) * perPage));
 
-      if (!response.ok) throw new Error("Search failed");
+      const [localResponse, ebayResponse] = await Promise.all([
+        fetch(`/api/products?${localParams}`),
+        fetch(
+          `/api/parts/search?q=${query}&brand=${brand}&page=${effectivePage}&perPage=${perPage}&sort=${sort}&condition=${condition}${
+            minPrice ? `&minPrice=${minPrice}` : ""
+          }${maxPrice ? `&maxPrice=${maxPrice}` : ""}`
+        ),
+      ]);
 
-      const data = await response.json();
-      setParts(data.parts || []);
-      setTotal(Number(data.total || 0));
+      const localData = localResponse.ok
+        ? await localResponse.json()
+        : { products: [] };
+      const ebayData = ebayResponse.ok
+        ? await ebayResponse.json()
+        : { parts: [], total: 0 };
+
+      // Combine results
+      const localParts = localData.products.map((p: any) => ({
+        id: p.id,
+        title: p.name,
+        price: p.price,
+        condition: p.condition,
+        imageUrl: p.images[0] || "",
+        seller: "Servixing",
+        ebayUrl: "",
+        type: "local" as const,
+        stock: p.stock,
+      }));
+
+      const ebayParts = ebayData.parts.map((p: any) => ({
+        ...p,
+        type: "ebay" as const,
+      }));
+
+      const combinedParts = [...localParts, ...ebayParts];
+      setParts(combinedParts);
+      setTotal(combinedParts.length); // For simplicity, since pagination is tricky with combined results
+
       // ensure page reflects backend echo
-      if (typeof data.page === "number") setPage(data.page);
+      if (typeof ebayData.page === "number") setPage(ebayData.page);
     } catch (error) {
       console.error("Parts search error:", error);
       setParts([]);
@@ -382,6 +414,25 @@ ${
     mql.addEventListener("change", set);
     return () => mql.removeEventListener("change", set);
   }, []);
+
+  const addToCart = async (productId: string) => {
+    try {
+      const response = await fetch("/api/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId, quantity: 1 }),
+      });
+
+      if (response.ok) {
+        alert("Added to cart!");
+      } else {
+        alert("Failed to add to cart");
+      }
+    } catch (error) {
+      console.error("Add to cart error:", error);
+      alert("Failed to add to cart");
+    }
+  };
 
   const openPreview = (part: Part) => {
     setSelected(part);
@@ -761,17 +812,28 @@ ${
                       >
                         Preview
                       </Button>
-                      <a
-                        href={part.ebayUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block"
-                      >
-                        <Button className="w-full bg-orange-600 hover:bg-orange-700">
-                          Buy on eBay
-                          <ExternalLink className="ml-2 h-4 w-4" />
+                      {part.type === "local" ? (
+                        <Button
+                          onClick={() => addToCart(part.id)}
+                          className="w-full bg-orange-600 hover:bg-orange-700"
+                          disabled={part.stock === 0}
+                        >
+                          <ShoppingCart className="h-4 w-4 mr-2" />
+                          {part.stock === 0 ? "Out of Stock" : "Add to Cart"}
                         </Button>
-                      </a>
+                      ) : (
+                        <a
+                          href={part.ebayUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block"
+                        >
+                          <Button className="w-full bg-orange-600 hover:bg-orange-700">
+                            Buy on eBay
+                            <ExternalLink className="ml-2 h-4 w-4" />
+                          </Button>
+                        </a>
+                      )}
                     </div>
                   </div>
                 </Card>
@@ -904,15 +966,26 @@ ${
                     Seller: {selected.seller}
                   </div>
                   <div className="grid grid-cols-2 gap-2 pt-2">
-                    <a
-                      href={selected.ebayUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Button className="w-full bg-orange-600 hover:bg-orange-700">
-                        View details <ExternalLink className="ml-2 h-4 w-4" />
+                    {selected?.type === "local" ? (
+                      <Button
+                        onClick={() => addToCart(selected.id)}
+                        className="w-full bg-orange-600 hover:bg-orange-700"
+                        disabled={selected.stock === 0}
+                      >
+                        <ShoppingCart className="h-4 w-4 mr-2" />
+                        {selected.stock === 0 ? "Out of Stock" : "Add to Cart"}
                       </Button>
-                    </a>
+                    ) : (
+                      <a
+                        href={selected?.ebayUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Button className="w-full bg-orange-600 hover:bg-orange-700">
+                          View details <ExternalLink className="ml-2 h-4 w-4" />
+                        </Button>
+                      </a>
+                    )}
                     <Dialog.Close asChild>
                       <Button variant="secondary" className="w-full">
                         Close
@@ -954,15 +1027,26 @@ ${
                     Seller: {selected.seller}
                   </div>
                   <div className="mt-4 grid grid-cols-2 gap-2">
-                    <a
-                      href={selected.ebayUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Button className="w-full bg-orange-600 hover:bg-orange-700">
-                        View details <ExternalLink className="ml-2 h-4 w-4" />
+                    {selected?.type === "local" ? (
+                      <Button
+                        onClick={() => addToCart(selected.id)}
+                        className="w-full bg-orange-600 hover:bg-orange-700"
+                        disabled={selected.stock === 0}
+                      >
+                        <ShoppingCart className="h-4 w-4 mr-2" />
+                        {selected.stock === 0 ? "Out of Stock" : "Add to Cart"}
                       </Button>
-                    </a>
+                    ) : (
+                      <a
+                        href={selected?.ebayUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Button className="w-full bg-orange-600 hover:bg-orange-700">
+                          View details <ExternalLink className="ml-2 h-4 w-4" />
+                        </Button>
+                      </a>
+                    )}
                     <Button
                       variant="secondary"
                       className="w-full"
