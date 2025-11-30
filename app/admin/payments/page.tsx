@@ -57,6 +57,10 @@ export default function AdminPaymentsPage() {
   );
   const [refundReason, setRefundReason] = useState("");
   const [sendEmail, setSendEmail] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
 
   useEffect(() => {
     fetchAnalytics();
@@ -134,6 +138,24 @@ export default function AdminPaymentsPage() {
     }
   };
 
+  const filteredPayments = payments.filter(
+    (payment) =>
+      payment.user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      payment.user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      payment.amount.includes(searchQuery) ||
+      payment.status.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (payment.workOrder?.device.brand + " " + payment.workOrder?.device.model)
+        ?.toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      payment.workOrder?.issueDescription
+        ?.toLowerCase()
+        .includes(searchQuery.toLowerCase())
+  );
+  const paginatedPayments = filteredPayments.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-8 flex items-center justify-between">
@@ -186,6 +208,16 @@ export default function AdminPaymentsPage() {
 
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Recent Payments</h2>
+            <div className="mb-4">
+              <Input
+                placeholder="Search payments by customer, amount, status, device..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+              />
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="border-b border-border">
@@ -199,7 +231,7 @@ export default function AdminPaymentsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {payments.slice(0, 20).map((payment) => (
+                  {paginatedPayments.map((payment) => (
                     <tr
                       key={payment.id}
                       className="border-b border-border hover:bg-muted/50"
@@ -242,7 +274,14 @@ export default function AdminPaymentsPage() {
                       <td className="p-3 text-muted-foreground">
                         {new Date(payment.createdAt).toLocaleDateString()}
                       </td>
-                      <td className="p-3 text-center">
+                      <td className="p-3 text-center flex gap-2 justify-center">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedPayment(payment)}
+                        >
+                          View Details
+                        </Button>
                         {payment.status === "PAID" &&
                           payment.refunds.length === 0 && (
                             <Dialog>
@@ -318,7 +357,90 @@ export default function AdminPaymentsPage() {
                 </tbody>
               </table>
             </div>
+            <div className="mt-4 flex justify-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(currentPage - 1)}
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Page {currentPage} of{" "}
+                {Math.ceil(filteredPayments.length / pageSize)}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={
+                  currentPage >= Math.ceil(filteredPayments.length / pageSize)
+                }
+                onClick={() => setCurrentPage(currentPage + 1)}
+              >
+                Next
+              </Button>
+            </div>
           </Card>
+          {selectedPayment && (
+            <Dialog
+              open={!!selectedPayment}
+              onOpenChange={() => setSelectedPayment(null)}
+            >
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Payment Details</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <p>
+                    <strong>ID:</strong> {selectedPayment.id}
+                  </p>
+                  <p>
+                    <strong>Amount:</strong> ₦
+                    {Number(selectedPayment.amount).toFixed(2)}
+                  </p>
+                  <p>
+                    <strong>Currency:</strong> {selectedPayment.currency}
+                  </p>
+                  <p>
+                    <strong>Status:</strong> {selectedPayment.status}
+                  </p>
+                  <p>
+                    <strong>Created At:</strong>{" "}
+                    {new Date(selectedPayment.createdAt).toLocaleString()}
+                  </p>
+                  <p>
+                    <strong>User:</strong> {selectedPayment.user.name} (
+                    {selectedPayment.user.email})
+                  </p>
+                  {selectedPayment.workOrder && (
+                    <div>
+                      <p>
+                        <strong>Work Order:</strong>
+                      </p>
+                      <p>
+                        Device: {selectedPayment.workOrder.device.brand}{" "}
+                        {selectedPayment.workOrder.device.model}
+                      </p>
+                      <p>Issue: {selectedPayment.workOrder.issueDescription}</p>
+                    </div>
+                  )}
+                  {selectedPayment.refunds.length > 0 && (
+                    <div>
+                      <p>
+                        <strong>Refunds:</strong>
+                      </p>
+                      {selectedPayment.refunds.map((refund, idx) => (
+                        <p key={idx}>
+                          {refund.reason || "No reason"} - ₦{refund.amount}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
         </>
       ) : null}
     </div>
