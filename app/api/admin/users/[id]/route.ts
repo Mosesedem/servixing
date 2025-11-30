@@ -5,6 +5,105 @@ import { sendEmail } from "@/lib/mailer";
 import config from "@/lib/config";
 import { NextResponse } from "next/server";
 
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userRole = (session.user as any).role;
+    const isAdmin = userRole === "ADMIN" || userRole === "SUPER_ADMIN";
+    const isOwner = session.user.id === (await params).id;
+
+    if (!isAdmin && !isOwner) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const userId = (await params).id;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        phone: true,
+        role: true,
+        createdAt: true,
+        addresses: true,
+        devices: {
+          select: {
+            id: true,
+            deviceType: true,
+            brand: true,
+            model: true,
+            serialNumber: true,
+            createdAt: true,
+            workOrders: { select: { id: true, status: true } },
+          },
+          orderBy: { createdAt: "desc" },
+        },
+        workOrders: {
+          select: {
+            id: true,
+            status: true,
+            issueDescription: true,
+            createdAt: true,
+            finalCost: true,
+            paymentStatus: true,
+          },
+          orderBy: { createdAt: "desc" },
+        },
+        payments: {
+          select: {
+            id: true,
+            amount: true,
+            status: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: "desc" },
+        },
+        supportTickets: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: "desc" },
+        },
+        auditLogs: {
+          select: {
+            id: true,
+            action: true,
+            entityType: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: "desc" },
+          take: 20,
+        },
+      },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(user);
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch user" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -17,15 +116,19 @@ export async function PATCH(
     }
 
     const userRole = (session.user as any).role;
-    if (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN") {
+    const isAdmin = userRole === "ADMIN" || userRole === "SUPER_ADMIN";
+    const isOwner = session.user.id === (await params).id;
+
+    if (!isAdmin && !isOwner) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { role, sendEmail: shouldSendEmail } = await req.json();
+    const { name, email, phone, role } = await req.json();
     const userId = (await params).id;
 
-    if (!role) {
-      return NextResponse.json({ error: "Role is required" }, { status: 400 });
+    // Only admins can change role
+    if (role && !isAdmin) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Only SUPER_ADMIN can assign SUPER_ADMIN role
@@ -39,59 +142,36 @@ export async function PATCH(
     // Get current user data for audit log
     const currentUser = await prisma.user.findUnique({
       where: { id: userId },
-      select: { role: true },
+      select: { name: true, email: true, phone: true, role: true },
     });
 
     if (!currentUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name;
+    if (email !== undefined) updateData.email = email;
+    if (phone !== undefined) updateData.phone = phone;
+    if (role !== undefined) updateData.role = role;
+
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: { role },
-      select: { id: true, email: true, name: true, role: true },
+      data: updateData,
+      select: { id: true, email: true, name: true, phone: true, role: true },
     });
 
     // Log the action
     await prisma.auditLog.create({
       data: {
         userId: session.user.id,
-        action: "user_role_updated",
+        action: "user_updated",
         entityType: "User",
         entityId: userId,
-        oldValue: JSON.stringify({ role: currentUser.role }),
-        newValue: JSON.stringify({ role }),
+        oldValue: JSON.stringify(currentUser),
+        newValue: JSON.stringify(updateData),
       },
     });
-
-    // Send email notification if requested
-    if (shouldSendEmail && updatedUser.email) {
-      const emailHtml = `<!doctype html>
-<html>
-  <head>
-    <meta charSet="utf-8" />
-    <title>Account Role Updated</title>
-  </head>
-  <body style="font-family:Arial, sans-serif; color:#111;">
-    <div style="max-width:640px;margin:0 auto;padding:24px;border:1px solid #eee;border-radius:12px">
-      <h2 style="margin-top:0;color:#111">Account Role Updated</h2>
-      <p>Hi ${updatedUser.name || "there"},</p>
-      <p>Your account role has been updated to <strong>${role.toLowerCase()}</strong>.</p>
-      <p>If you have any questions, please contact our support team.</p>
-      <p style="color:#888;font-size:12px">This is an automated email from ${
-        config.app.name
-      }. Please do not reply.</p>
-    </div>
-  </body>
-</html>`;
-
-      await sendEmail({
-        to: updatedUser.email,
-        subject: "Your account role has been updated",
-        html: emailHtml,
-        userIdForLog: userId,
-      });
-    }
 
     return NextResponse.json(updatedUser);
   } catch (error) {

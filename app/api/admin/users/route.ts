@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -16,7 +16,24 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const url = new URL(request.url);
+    const search = url.searchParams.get("search") || "";
+    const page = parseInt(url.searchParams.get("page") || "1");
+    const limit = parseInt(url.searchParams.get("limit") || "10");
+    const skip = (page - 1) * limit;
+
+    const where = search
+      ? {
+          OR: [
+            { name: { contains: search, mode: "insensitive" as const } },
+            { email: { contains: search, mode: "insensitive" as const } },
+          ],
+        }
+      : {};
+
+    const totalUsers = await prisma.user.count({ where });
     const users = await prisma.user.findMany({
+      where,
       select: {
         id: true,
         email: true,
@@ -28,17 +45,23 @@ export async function GET() {
         workOrders: { select: { id: true } },
       },
       orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
     });
 
-    return NextResponse.json(
-      users.map((user) => ({
+    const totalPages = Math.ceil(totalUsers / limit);
+
+    return NextResponse.json({
+      users: users.map((user) => ({
         ...user,
         deviceCount: user.devices.length,
         orderCount: user.workOrders.length,
         devices: undefined,
         workOrders: undefined,
-      }))
-    );
+      })),
+      totalPages,
+      currentPage: page,
+    });
   } catch (error) {
     console.error(" Error fetching users:", error);
     return NextResponse.json(

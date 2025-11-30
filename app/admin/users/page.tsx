@@ -13,8 +13,20 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Edit, Mail } from "lucide-react";
+import { Trash2, Edit, Mail, Eye } from "lucide-react";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
+
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  phone?: string;
+  role: string;
+  deviceCount: number;
+  orderCount: number;
+  createdAt: string;
+}
 
 interface User {
   id: string;
@@ -32,6 +44,10 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [sendEmail, setSendEmail] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const limit = 10;
   const { data: session } = useSession();
 
   const isSuperAdmin = session?.user?.role === "SUPER_ADMIN";
@@ -40,15 +56,22 @@ export default function AdminUsers() {
     fetchUsers();
   }, []);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (page = 1, search = "") => {
     try {
-      const response = await fetch("/api/admin/users");
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        search,
+      });
+      const response = await fetch(`/api/admin/users?${params}`);
       if (response.ok) {
         const data = await response.json();
-        setUsers(data);
+        setUsers(data.users || data);
+        setTotalPages(data.totalPages || 1);
+        setCurrentPage(page);
       }
     } catch (error) {
-      console.error(" Error fetching users:", error);
+      console.error("Error fetching users:", error);
     } finally {
       setLoading(false);
     }
@@ -89,6 +112,16 @@ export default function AdminUsers() {
   return (
     <div>
       <h1 className="text-3xl font-bold mb-6">Users Management</h1>
+
+      <div className="mb-4 flex gap-2">
+        <Input
+          placeholder="Search by name or email"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="max-w-sm"
+        />
+        <Button onClick={() => fetchUsers(1, searchTerm)}>Search</Button>
+      </div>
 
       {loading ? (
         <div className="text-center text-muted-foreground">
@@ -136,6 +169,11 @@ export default function AdminUsers() {
                   </td>
                   <td className="p-3 text-center">
                     <div className="flex gap-2 justify-center">
+                      <Link href={`/admin/users/${user.id}`}>
+                        <Button variant="outline" size="sm">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </Link>
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button
@@ -228,6 +266,24 @@ export default function AdminUsers() {
               ))}
             </tbody>
           </table>
+
+          <div className="flex justify-between items-center mt-4">
+            <Button
+              disabled={currentPage === 1}
+              onClick={() => fetchUsers(currentPage - 1, searchTerm)}
+            >
+              Previous
+            </Button>
+            <span>
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              disabled={currentPage === totalPages}
+              onClick={() => fetchUsers(currentPage + 1, searchTerm)}
+            >
+              Next
+            </Button>
+          </div>
         </div>
       )}
     </div>
