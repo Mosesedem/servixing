@@ -40,11 +40,38 @@ export default function PaymentReceiptPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [paying, setPaying] = useState(false);
   const [refundState, setRefundState] = useState({
     amount: "",
     reason: "",
     loading: false,
   });
+
+  const handlePayNow = async () => {
+    if (!payment) return;
+    setPaying(true);
+    try {
+      const res = await fetch("/api/payments/initialize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workOrderId: payment.workOrder?.id,
+          amount: payment.amount,
+          metadata: { paymentId: payment.id },
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        window.location.href = json.data.authorizationUrl;
+      } else {
+        alert(json.error?.message || "Failed to initialize payment");
+      }
+    } catch (e) {
+      alert("Failed to initialize payment");
+    } finally {
+      setPaying(false);
+    }
+  };
 
   useEffect(() => {
     fetchPayment();
@@ -247,32 +274,15 @@ export default function PaymentReceiptPage() {
           )}
         </div>
 
-        {isAdmin && payment.status === "PAID" && (
-          <div className="mt-8 print:hidden">
-            <h2 className="text-lg font-semibold mb-3">Initiate Refund</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Input
-                type="number"
-                placeholder="Amount (optional)"
-                value={refundState.amount}
-                onChange={(e) =>
-                  setRefundState({ ...refundState, amount: e.target.value })
-                }
-              />
-              <Input
-                placeholder="Reason"
-                value={refundState.reason}
-                onChange={(e) =>
-                  setRefundState({ ...refundState, reason: e.target.value })
-                }
-              />
-              <Button onClick={handleRefund} disabled={refundState.loading}>
-                {refundState.loading ? "Processing..." : "Refund"}
-              </Button>
-            </div>
-            <p className="text-xs text-gray-500 mt-2">
-              Leave amount empty to refund full amount.
-            </p>
+        {payment.status === "PENDING" && (
+          <div className="mt-6 flex justify-center">
+            <Button
+              onClick={handlePayNow}
+              disabled={paying}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {paying ? "Initializing..." : "Pay Now"}
+            </Button>
           </div>
         )}
       </Card>

@@ -7,6 +7,7 @@ import { StatusChart } from "@/components/dashboard/status-chart";
 import { RecentOrders } from "@/components/dashboard/recent-orders";
 import { DeviceStats } from "@/components/dashboard/device-stats";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Activity, Package, Headphones } from "lucide-react";
 
 // Revalidate every 5 minutes
@@ -381,72 +382,88 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* Stats Cards */}
-      <StatsCards summary={data.summary} />
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="activity">Activity</TabsTrigger>
+        </TabsList>
 
-      {/* Activity Overview */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Orders (Last 30 Days)
-            </CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {data.recentActivity.ordersLast30Days}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {data.recentActivity.completedLast30Days} completed
-            </p>
-          </CardContent>
-        </Card>
+        <TabsContent value="overview" className="space-y-8">
+          {/* Stats Cards */}
+          <StatsCards summary={data.summary} />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Registered Devices
-            </CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {data.summary.totalDevices}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Manage in device settings
-            </p>
-          </CardContent>
-        </Card>
+          {/* Activity Overview */}
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Orders (Last 30 Days)
+                </CardTitle>
+                <Activity className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {data.recentActivity.ordersLast30Days}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {data.recentActivity.completedLast30Days} completed
+                </p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Support Tickets
-            </CardTitle>
-            <Headphones className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{data.ticketStats.total}</div>
-            <p className="text-xs text-muted-foreground">
-              {data.ticketStats.open} open tickets
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Registered Devices
+                </CardTitle>
+                <Package className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {data.summary.totalDevices}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Manage in device settings
+                </p>
+              </CardContent>
+            </Card>
 
-      {/* Charts Row */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <StatusChart data={data.statusBreakdown} />
-        <DeviceStats data={data.deviceStats} />
-      </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Support Tickets
+                </CardTitle>
+                <Headphones className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {data.ticketStats.total}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {data.ticketStats.open} open tickets
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
 
-      {/* Spending Trend */}
-      <SpendingChart data={data.spendingTrend} />
+        <TabsContent value="analytics" className="space-y-8">
+          {/* Charts Row */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            <StatusChart data={data.statusBreakdown} />
+            <DeviceStats data={data.deviceStats} />
+          </div>
 
-      {/* Recent Orders */}
-      <RecentOrders orders={data.recentWorkOrders} />
+          {/* Spending Trend */}
+          <SpendingChart data={data.spendingTrend} />
+        </TabsContent>
+
+        <TabsContent value="activity" className="space-y-8">
+          {/* Recent Orders */}
+          <RecentOrders orders={data.recentWorkOrders} />
+        </TabsContent>
+      </Tabs>
     </main>
   );
 }

@@ -405,12 +405,25 @@ export default function PaymentsPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <Link href={`/dashboard/payments/${payment.id}`}>
-                          <Button variant="outline" size="sm">
-                            <FileText className="h-4 w-4 mr-1" />
-                            Receipt
-                          </Button>
-                        </Link>
+                        <div className="flex gap-2">
+                          {payment.status === "PENDING" && (
+                            <Button
+                              onClick={() =>
+                                router.push(`/dashboard/payments/${payment.id}`)
+                              }
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              Pay Now
+                            </Button>
+                          )}
+                          <Link href={`/dashboard/payments/${payment.id}`}>
+                            <Button variant="outline" size="sm">
+                              <FileText className="h-4 w-4 mr-1" />
+                              Receipt
+                            </Button>
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   ))}

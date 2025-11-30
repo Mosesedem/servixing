@@ -327,7 +327,11 @@ export default function DevicesPage() {
 
                     <p className="text-xs text-gray-500 mt-3">
                       Registered:{" "}
-                      {new Date(device.createdAt).toLocaleDateString()}
+                      {new Date(device.createdAt).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
                     </p>
 
                     {/* Actions */}

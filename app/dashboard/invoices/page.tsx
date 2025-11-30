@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, Mail, FileText, Calendar, DollarSign } from "lucide-react";
+import {
+  Download,
+  Mail,
+  FileText,
+  Calendar,
+  DollarSign,
+  Loader2,
+} from "lucide-react";
 
 interface Invoice {
   id: string;
@@ -65,6 +72,11 @@ export default function InvoicesPage() {
     }
   };
 
+  const handlePayInvoice = async (invoiceId: string) => {
+    // Redirect to payment page or initiate payment
+    window.location.href = `/dashboard/payments/${invoiceId}`;
+  };
+
   const handleDownloadInvoice = async (invoiceId: string) => {
     setDownloadingId(invoiceId);
     try {
@@ -119,7 +131,9 @@ export default function InvoicesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <Loader2 className="animate-spin rounded-full h-12 w-12" />
+
+        <p className="ml-4 text-lg font-medium text-gray-700">Loading...</p>
       </div>
     );
   }
@@ -202,6 +216,14 @@ export default function InvoicesPage() {
                     </div>
 
                     <div className="flex gap-2">
+                      {invoice.status === "PENDING" && (
+                        <button
+                          onClick={() => handlePayInvoice(invoice.id)}
+                          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                          Pay Now
+                        </button>
+                      )}
                       <button
                         onClick={() => handleEmailInvoice(invoice.id)}
                         disabled={emailingId === invoice.id}

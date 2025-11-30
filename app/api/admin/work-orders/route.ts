@@ -82,8 +82,34 @@ export async function PATCH(req: NextRequest) {
       include: {
         user: { select: { id: true, email: true, name: true } },
         device: { select: { brand: true, model: true } },
+        payments: true, // Include payments to check
       },
     });
+
+    // If finalCost is set and there's no payment or payment amount differs, create/update payment
+    if (finalCost !== undefined && finalCost > 0) {
+      const existingPayment = updated.payments.find(
+        (p) => p.status === "PENDING"
+      );
+      if (!existingPayment) {
+        // Create new payment
+        await prisma.payment.create({
+          data: {
+            userId: updated.userId,
+            workOrderId: updated.id,
+            amount: finalCost,
+            currency: "NGN",
+            status: "PENDING",
+          },
+        });
+      } else if (existingPayment.amount !== finalCost) {
+        // Update existing payment amount
+        await prisma.payment.update({
+          where: { id: existingPayment.id },
+          data: { amount: finalCost },
+        });
+      }
+    }
 
     // Log the action
     await prisma.auditLog.create({
