@@ -11,8 +11,9 @@ import { sendEmail } from "@/lib/mailer";
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authOptions);
 
@@ -33,7 +34,7 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const checkId = params.id;
+    const checkId = id;
 
     const check = await prisma.warrantyCheck.findUnique({
       where: { id: checkId },
@@ -78,8 +79,9 @@ export async function GET(
  */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authOptions);
 
@@ -100,7 +102,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const checkId = params.id;
+    const checkId = id;
     const { status, sendEmail: shouldSendEmail } = await req.json();
 
     const updateData: any = { status };
@@ -137,7 +139,7 @@ export async function PATCH(
     });
 
     // Send email notification if requested
-    if (shouldSendEmail && updatedCheck.workOrder.user.email) {
+    if (shouldSendEmail && updatedCheck.workOrder?.user?.email) {
       const statusMessages = {
         SUCCESS: "Your warranty check has been completed successfully.",
         FAILED:
@@ -187,8 +189,9 @@ export async function PATCH(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authOptions);
 
@@ -209,7 +212,7 @@ export async function DELETE(
       );
     }
 
-    const checkId = params.id;
+    const checkId = id;
     const { sendEmail: shouldSendEmail } = await req.json();
 
     const check = await prisma.warrantyCheck.findUnique({
@@ -241,7 +244,7 @@ export async function DELETE(
     });
 
     // Send email notification if requested
-    if (shouldSendEmail && check.workOrder.user.email) {
+    if (shouldSendEmail && check.workOrder?.user?.email) {
       try {
         await sendEmail({
           to: check.workOrder.user.email,

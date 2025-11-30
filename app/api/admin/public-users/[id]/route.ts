@@ -11,8 +11,9 @@ import { sendEmail } from "@/lib/mailer";
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authOptions);
 
@@ -33,7 +34,7 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const userId = params.id;
+    const userId = id;
 
     const user = await prisma.user.findUnique({
       where: { id: userId, password: null, deletedAt: null },
@@ -101,8 +102,9 @@ export async function GET(
  */
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authOptions);
 
@@ -123,7 +125,7 @@ export async function PUT(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const userId = params.id;
+    const userId = id;
     const { name, email, phone, sendEmail: shouldSendEmail } = await req.json();
 
     const updatedUser = await prisma.user.update({
@@ -171,8 +173,9 @@ export async function PUT(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authOptions);
 
@@ -193,7 +196,7 @@ export async function DELETE(
       );
     }
 
-    const userId = params.id;
+    const userId = id;
     const { sendEmail: shouldSendEmail } = await req.json();
 
     const user = await prisma.user.findUnique({

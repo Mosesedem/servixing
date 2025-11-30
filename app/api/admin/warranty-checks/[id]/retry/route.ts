@@ -11,8 +11,9 @@ import { Prisma } from "@prisma/client";
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authOptions);
 
@@ -33,7 +34,7 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const checkId = params.id;
+    const checkId = id;
 
     // Reset the check to QUEUED status
     const updatedCheck = await prisma.warrantyCheck.update({

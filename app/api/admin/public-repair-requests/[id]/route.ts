@@ -12,8 +12,9 @@ import { Prisma } from "@prisma/client";
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authOptions);
 
@@ -34,7 +35,7 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const requestId = params.id;
+    const requestId = id;
 
     const request = await prisma.workOrder.findUnique({
       where: { id: requestId },
@@ -102,8 +103,9 @@ export async function GET(
  */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authOptions);
 
@@ -124,7 +126,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const requestId = params.id;
+    const requestId = id;
     const {
       status,
       notes,
@@ -216,8 +218,9 @@ export async function PATCH(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authOptions);
 
@@ -238,7 +241,7 @@ export async function DELETE(
       );
     }
 
-    const requestId = params.id;
+    const requestId = id;
     const { sendEmail: shouldSendEmail } = await req.json();
 
     const request = await prisma.workOrder.findUnique({

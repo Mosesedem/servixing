@@ -53,6 +53,16 @@ export async function POST(req: NextRequest) {
     const customerRequest = String(form.get("customerRequest") || "").trim();
     const honeypot = String(form.get("hp") || "").trim();
 
+    // Construct address text for display
+    const addressText =
+      dropoffType === "DISPATCH" || dropoffType === "ONSITE"
+        ? `${addressLine1}${
+            addressLine2 ? `, ${addressLine2}` : ""
+          }, ${city}, ${state} ${postalCode}${
+            landmark ? ` (Landmark: ${landmark})` : ""
+          }`
+        : "";
+
     // Honeypot check
     if (honeypot) {
       return NextResponse.json(
@@ -169,38 +179,63 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Compose metadata
-    const metadata = {
-      contact: { name, email, phone },
-      device: { deviceType, brand, model, serialNumber },
-      issue,
-      problemType: problemType || null,
-      dropoffType,
-      address:
-        dropoffType === "DISPATCH" || dropoffType === "ONSITE"
-          ? { addressLine1, addressLine2, city, state, postalCode, landmark }
-          : null,
-      customerRequest: customerRequest || null,
-      images: imageUrls,
-      submittedAt: new Date().toISOString(),
-      source: "public_form",
-    };
+    // Create device record
+    const device = await prisma.device.create({
+      data: {
+        userId: user.id,
+        deviceType,
+        brand,
+        model: model || "Unknown Model",
+        serialNumber,
+        description: `Device submitted via public repair request form`,
+        images: imageUrls,
+      },
+    });
 
-    // Build description markdown for staff
-    const addressText =
-      dropoffType === "DISPATCH" || dropoffType === "ONSITE"
-        ? [
-            addressLine1,
-            addressLine2,
-            `${city}${state ? ", " + state : ""}`,
-            postalCode,
-            landmark ? `Landmark: ${landmark}` : "",
-          ]
-            .filter(Boolean)
-            .join("\n")
-        : "Drop-off at service center";
+    // Create work order
+    const workOrder = await prisma.workOrder.create({
+      data: {
+        userId: user.id,
+        deviceId: device.id,
+        contactName: name,
+        contactEmail: email,
+        contactPhone: phone,
+        issueDescription: issue,
+        problemType,
+        dropoffType: dropoffType as any,
+        dispatchAddress:
+          dropoffType === "DISPATCH" || dropoffType === "ONSITE"
+            ? ({
+                addressLine1,
+                addressLine2,
+                city,
+                state,
+                postalCode,
+                landmark,
+              } as any)
+            : undefined,
+        status: "CREATED",
+        warrantyChecked: false,
+        metadata: {
+          submittedAt: new Date().toISOString(),
+          source: "public_form",
+          customerRequest,
+          images: imageUrls,
+        },
+      },
+    });
 
-    const description = `
+    // Create support ticket for tracking
+    const ticket = await prisma.supportTicket.create({
+      data: {
+        userId: user.id,
+        deviceId: device.id,
+        workOrderId: workOrder.id,
+        title: `Repair Request: ${brand} ${deviceType}`,
+        description: `
+**Work Order ID:** ${workOrder.id}
+**Device ID:** ${device.id}
+
 **Customer Details:**
 - Name: ${name}
 - Email: ${email}
@@ -210,7 +245,7 @@ export async function POST(req: NextRequest) {
 - Type: ${deviceType}
 - Brand: ${brand}
 - Model: ${model || "Not specified"}
-- serial Number: ${serialNumber}
+- Serial Number: ${serialNumber}
 
 **Problem Type:**
 ${problemType || "Not specified"}
@@ -240,16 +275,14 @@ ${
         .join("\n")}`
     : ""
 }
-    `;
-
-    // Create ticket
-    const ticket = await prisma.supportTicket.create({
-      data: {
-        userId: user.id,
-        title: `Repair Request: ${brand} ${deviceType}`,
-        description,
+        `,
         priority: "normal",
-        metadata,
+        metadata: {
+          workOrderId: workOrder.id,
+          deviceId: device.id,
+          submittedAt: new Date().toISOString(),
+          source: "public_form",
+        },
       } as any,
     });
 
@@ -354,7 +387,11 @@ ${
 
     return NextResponse.json({
       success: true,
-      data: { ticketId: ticket.id, images: imageUrls },
+      data: {
+        workOrderId: workOrder.id,
+        ticketId: ticket.id,
+        images: imageUrls,
+      },
     });
   } catch (error) {
     console.error("Public repair request error:", error);

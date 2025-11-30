@@ -460,6 +460,9 @@ model Part {
   // Status
   orderStatus PartStatus @default(ORDERED)
 
+  // Additional metadata
+  metadata Json?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -473,8 +476,8 @@ model Part {
 
 // Warranty Models
 model WarrantyCheck {
-  id          String @id @default(cuid())
-  workOrderId String
+  id          String  @id @default(cuid())
+  workOrderId String?
 
   provider    String // "apple", "dell"
   initiatedBy String // userId
@@ -487,7 +490,7 @@ model WarrantyCheck {
   finishedAt DateTime?
 
   // Relations
-  workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  workOrder WorkOrder? @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
 
   @@index([workOrderId])
   @@index([status])

@@ -11,8 +11,9 @@ import { sendEmail } from "@/lib/mailer";
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authOptions);
 
@@ -33,7 +34,7 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const partId = params.id;
+    const partId = id;
 
     const part = await prisma.part.findUnique({
       where: { id: partId },
@@ -78,8 +79,9 @@ export async function GET(
  */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authOptions);
 
@@ -100,7 +102,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const partId = params.id;
+    const partId = id;
     const { orderStatus, sendEmail: shouldSendEmail } = await req.json();
 
     const updatedPart = await prisma.part.update({
@@ -177,8 +179,9 @@ export async function PATCH(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authOptions);
 
@@ -199,7 +202,7 @@ export async function DELETE(
       );
     }
 
-    const partId = params.id;
+    const partId = id;
     const { sendEmail: shouldSendEmail } = await req.json();
 
     const part = await prisma.part.findUnique({

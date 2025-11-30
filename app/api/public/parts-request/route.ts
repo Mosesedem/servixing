@@ -52,6 +52,16 @@ export async function POST(req: NextRequest) {
 
     const customerRequest = String(form.get("customerRequest") || "").trim();
 
+    // Construct address text for display
+    const addressText =
+      deliveryType === "DELIVERY"
+        ? `${addressLine1}${
+            addressLine2 ? `, ${addressLine2}` : ""
+          }, ${city}, ${state} ${postalCode}${
+            landmark ? ` (Landmark: ${landmark})` : ""
+          }`
+        : "";
+
     // Validate required
     if (
       !name ||
@@ -160,37 +170,105 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Compose metadata
-    const metadata = {
-      contact: { name, email, phone },
-      device: { deviceType, brand, model, serialNumber },
-      part: { partName, quantity },
-      deliveryType,
-      address:
-        deliveryType === "DELIVERY"
-          ? { addressLine1, addressLine2, city, state, postalCode, landmark }
-          : null,
-      customerRequest: customerRequest || null,
-      images: imageUrls,
-      submittedAt: new Date().toISOString(),
-      source: "public_parts_form",
-    };
+    // Create device record if not exists
+    let device = await prisma.device.findFirst({
+      where: {
+        userId: user.id,
+        serialNumber,
+        brand,
+        deviceType,
+      },
+    });
 
-    // Build description markdown for staff
-    const addressText =
-      deliveryType === "DELIVERY"
-        ? [
-            addressLine1,
-            addressLine2,
-            `${city}${state ? ", " + state : ""}`,
-            postalCode,
-            landmark ? `Landmark: ${landmark}` : "",
-          ]
-            .filter(Boolean)
-            .join("\n")
-        : "Pickup at service center";
+    if (!device) {
+      device = await prisma.device.create({
+        data: {
+          userId: user.id,
+          deviceType,
+          brand,
+          model: model || "Unknown Model",
+          serialNumber,
+          description: `Device submitted via public parts request form`,
+        },
+      });
+    }
 
-    const description = `
+    // Create work order for parts request
+    const workOrder = await prisma.workOrder.create({
+      data: {
+        userId: user.id,
+        deviceId: device.id,
+        contactName: name,
+        contactEmail: email,
+        contactPhone: phone,
+        issueDescription: `Parts request: ${partName} (Quantity: ${quantity})`,
+        dropoffType: "DROPOFF", // Parts are typically picked up
+        status: "CREATED",
+        warrantyChecked: false,
+        metadata: {
+          submittedAt: new Date().toISOString(),
+          source: "public_parts_form",
+          customerRequest,
+          deliveryType,
+          deliveryAddress:
+            deliveryType === "DELIVERY"
+              ? {
+                  addressLine1,
+                  addressLine2,
+                  city,
+                  state,
+                  postalCode,
+                  landmark,
+                }
+              : null,
+        },
+      },
+    });
+
+    // Create part record
+    const part = await prisma.part.create({
+      data: {
+        workOrderId: workOrder.id,
+        ebayItemId: `public-${Date.now()}`, // Placeholder, would be from eBay search
+        title: partName,
+        partNumber: null,
+        price: 0, // To be determined
+        quantity,
+        orderStatus: "ORDERED",
+        vendorName: "public_request",
+        metadata: {
+          submittedAt: new Date().toISOString(),
+          source: "public_form",
+          customerRequest,
+          deliveryType,
+          deliveryAddress:
+            deliveryType === "DELIVERY"
+              ? {
+                  addressLine1,
+                  addressLine2,
+                  city,
+                  state,
+                  postalCode,
+                  landmark,
+                }
+              : null,
+          images: imageUrls,
+        },
+      },
+    });
+
+    // Create support ticket for tracking
+    const ticket = await prisma.supportTicket.create({
+      data: {
+        userId: user.id,
+        deviceId: device.id,
+        workOrderId: workOrder.id,
+        title: `Parts Purchase Request: ${partName}`,
+        description: `
+**Work Order ID:** ${workOrder.id}
+**Part ID:** ${part.id}
+**Device ID:** ${device.id}
+
 **Customer Details:**
 - Name: ${name}
 - Email: ${email}
@@ -226,16 +304,15 @@ ${
         .join("\n")}`
     : ""
 }
-    `;
-
-    // Create ticket
-    const ticket = await prisma.supportTicket.create({
-      data: {
-        userId: user.id,
-        title: `Parts Purchase Request: ${partName}`,
-        description,
+        `,
         priority: "normal",
-        metadata,
+        metadata: {
+          workOrderId: workOrder.id,
+          partId: part.id,
+          deviceId: device.id,
+          submittedAt: new Date().toISOString(),
+          source: "public_parts_form",
+        },
       } as any,
     });
 
@@ -341,7 +418,12 @@ ${
 
     return NextResponse.json({
       success: true,
-      data: { ticketId: ticket.id, images: imageUrls },
+      data: {
+        workOrderId: workOrder.id,
+        partId: part.id,
+        ticketId: ticket.id,
+        images: imageUrls,
+      },
     });
   } catch (error) {
     console.error("Public parts request error:", error);
