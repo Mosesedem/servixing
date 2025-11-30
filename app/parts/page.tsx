@@ -1111,8 +1111,8 @@ ${
           <Dialog.Root open={requestOpen} onOpenChange={setRequestOpen}>
             <Dialog.Portal>
               <Dialog.Overlay className="fixed inset-0 bg-black/50 " />
-              <Dialog.Content className="fixed right-0 top-15 h-full w-full max-w-md bg-background shadow-xl focus:outline-none overflow-y-auto">
-                <div className="p-6">
+              <Dialog.Content className="fixed right-0 top-15 h-full w-full max-w-md bg-background shadow-xl focus:outline-none">
+                <div className="p-6 pb-20 overflow-y-auto h-full">
                   <Dialog.Title className="text-lg font-semibold mb-4">
                     Request for Parts
                   </Dialog.Title>
