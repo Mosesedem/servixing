@@ -10,6 +10,10 @@ import {
   CreditCard,
   Menu,
   X,
+  UserCheck,
+  Wrench,
+  Package,
+  Shield,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -44,6 +48,26 @@ export function AdminSidebar() {
       href: "/admin/users",
       icon: Users,
       label: "Users",
+    },
+    {
+      href: "/admin/public-users",
+      icon: UserCheck,
+      label: "Public Users",
+    },
+    {
+      href: "/admin/public-repair-requests",
+      icon: Wrench,
+      label: "Public Repair Requests",
+    },
+    {
+      href: "/admin/parts-requests",
+      icon: Package,
+      label: "Parts Requests",
+    },
+    {
+      href: "/admin/warranty-checks",
+      icon: Shield,
+      label: "Warranty Checks",
     },
     ...(isSuperAdmin
       ? [
