@@ -182,8 +182,8 @@ model Device {
   deviceType   String // laptop, phone, tablet, etc.
   brand        String // Apple, Dell, Samsung, etc.
   model        String
-  serialNumber String?  @unique
-  imei         String?  @unique
+  serialNumber String?
+  imei         String?
   color        String?
   description  String?  @db.Text
   images       String[] // image URLs

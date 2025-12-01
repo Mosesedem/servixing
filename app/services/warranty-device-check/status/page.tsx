@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -28,19 +29,95 @@ interface WarrantyResult {
 }
 
 export default function WarrantyDeviceCheckStatusPage() {
+  const searchParams = useSearchParams();
+  const paymentId = searchParams.get("paymentId");
+
   const [formData, setFormData] = useState({
     email: "",
     serialNumber: "",
     imei: "",
   });
   const [loading, setLoading] = useState(false);
+  const [autoLoading, setAutoLoading] = useState(!!paymentId);
   const [result, setResult] = useState<WarrantyResult | null>(null);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (paymentId) {
+      autoVerifyAndCheck();
+    }
+  }, [paymentId]);
+
+  const autoVerifyAndCheck = async () => {
+    if (!paymentId) return;
+
+    setAutoLoading(true);
+    try {
+      // First, verify the payment
+      const paymentRes = await fetch(`/api/public/payments/${paymentId}`);
+      if (!paymentRes.ok) {
+        throw new Error("Failed to fetch payment details");
+      }
+
+      const paymentResponse = await paymentRes.json();
+      const paymentData = paymentResponse.data || paymentResponse;
+
+      // Check if payment is already verified and paid
+      if (paymentData.status !== "PAID") {
+        // Verify payment
+        const verifyRes = await fetch("/api/public/payments/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reference: paymentData.paystackReference }),
+        });
+
+        if (!verifyRes.ok) {
+          throw new Error("Payment verification failed");
+        }
+
+        const verifyData = await verifyRes.json();
+
+        if (
+          verifyData.data?.status !== "success" &&
+          verifyData.status !== "success"
+        ) {
+          throw new Error("Payment not successful");
+        }
+      }
+
+      // Now get the warranty check results
+      const res = await fetch("/api/public/warranty-check/status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentId }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(
+          errorData.error?.message || errorData.error || "Check failed"
+        );
+      }
+
+      const data = await res.json();
+      setResult(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setAutoLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.email && !formData.serialNumber && !formData.imei) {
       setError("Please provide at least one search criteria");
+      return;
+    }
+
+    // Validate email format if provided
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      setError("Please enter a valid email address");
       return;
     }
 
@@ -57,7 +134,9 @@ export default function WarrantyDeviceCheckStatusPage() {
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Check failed");
+        throw new Error(
+          errorData.error?.message || errorData.error || "Check failed"
+        );
       }
 
       const data = await res.json();
@@ -124,109 +203,129 @@ export default function WarrantyDeviceCheckStatusPage() {
 
       {/* Main Content */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Form Card */}
-        <Card className="p-6 sm:p-8 mb-8">
-          <h2 className="text-2xl font-bold mb-6">Check Your Device Status</h2>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email */}
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">
-                Email (Optional)
-              </label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                placeholder="Enter your email address"
-                className="w-full"
-              />
+        {/* Auto Loading */}
+        {autoLoading && (
+          <Card className="p-6 sm:p-8 mb-8">
+            <div className="text-center">
+              <LoadingSpinner />
+              <h2 className="text-2xl font-bold mt-4 mb-2">
+                Verifying Payment
+              </h2>
+              <p className="text-muted-foreground">
+                Please wait while we verify your payment and check your
+                device...
+              </p>
             </div>
+          </Card>
+        )}
 
-            {/* Serial Number */}
-            <div className="space-y-2">
-              <label htmlFor="serialNumber" className="text-sm font-medium">
-                Serial Number (Optional)
-              </label>
-              <Input
-                id="serialNumber"
-                value={formData.serialNumber}
-                onChange={(e) =>
-                  setFormData({ ...formData, serialNumber: e.target.value })
-                }
-                placeholder="Enter device serial number"
-                className="w-full"
-              />
-            </div>
+        {/* Form Card - only show if not auto loading and no result */}
+        {!autoLoading && !result && (
+          <Card className="p-6 sm:p-8 mb-8">
+            <h2 className="text-2xl font-bold mb-6">
+              Check Your Device Status
+            </h2>
 
-            {/* IMEI */}
-            <div className="space-y-2">
-              <label htmlFor="imei" className="text-sm font-medium">
-                IMEI (Optional)
-              </label>
-              <Input
-                id="imei"
-                value={formData.imei}
-                onChange={(e) =>
-                  setFormData({ ...formData, imei: e.target.value })
-                }
-                placeholder="Enter IMEI"
-                className="w-full"
-              />
-            </div>
-
-            {/* Error Message */}
-            {error && (
-              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-800 dark:text-red-200">
-                    {error}
-                  </p>
-                </div>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Email */}
+              <div className="space-y-2">
+                <label htmlFor="email" className="text-sm font-medium">
+                  Email (Optional)
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
+                  placeholder="Enter your email address"
+                  className="w-full"
+                />
               </div>
-            )}
 
-            {/* Info Box */}
-            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <div className="flex items-start gap-3">
-                <Info className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
-                <div className="text-sm text-blue-900 dark:text-blue-100">
-                  <p className="font-semibold mb-1">Status Check</p>
-                  <p className="text-blue-800 dark:text-blue-200">
-                    Provide at least one piece of information to check your
-                    device status.
-                  </p>
-                </div>
+              {/* Serial Number */}
+              <div className="space-y-2">
+                <label htmlFor="serialNumber" className="text-sm font-medium">
+                  Serial Number (Optional)
+                </label>
+                <Input
+                  id="serialNumber"
+                  value={formData.serialNumber}
+                  onChange={(e) =>
+                    setFormData({ ...formData, serialNumber: e.target.value })
+                  }
+                  placeholder="Enter device serial number"
+                  className="w-full"
+                />
               </div>
-            </div>
 
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              disabled={
-                loading ||
-                (!formData.email && !formData.serialNumber && !formData.imei)
-              }
-              className="w-full bg-orange-600 hover:bg-orange-700 h-12 text-base font-semibold"
-            >
-              {loading ? (
-                <>
-                  <LoadingSpinner />
-                  <span className="ml-2">Checking...</span>
-                </>
-              ) : (
-                <>
-                  <Search className="h-5 w-5 mr-2" />
-                  Check Status
-                </>
+              {/* IMEI */}
+              <div className="space-y-2">
+                <label htmlFor="imei" className="text-sm font-medium">
+                  IMEI (Optional)
+                </label>
+                <Input
+                  id="imei"
+                  value={formData.imei}
+                  onChange={(e) =>
+                    setFormData({ ...formData, imei: e.target.value })
+                  }
+                  placeholder="Enter IMEI"
+                  className="w-full"
+                />
+              </div>
+
+              {/* Error Message */}
+              {error && (
+                <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+                    <p className="text-sm text-red-800 dark:text-red-200">
+                      {error}
+                    </p>
+                  </div>
+                </div>
               )}
-            </Button>
-          </form>
-        </Card>
+
+              {/* Info Box */}
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <Info className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+                  <div className="text-sm text-blue-900 dark:text-blue-100">
+                    <p className="font-semibold mb-1">Status Check</p>
+                    <p className="text-blue-800 dark:text-blue-200">
+                      Provide at least one piece of information to check your
+                      device status.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <Button
+                type="submit"
+                disabled={
+                  loading ||
+                  (!formData.email && !formData.serialNumber && !formData.imei)
+                }
+                className="w-full bg-orange-600 hover:bg-orange-700 h-12 text-base font-semibold"
+              >
+                {loading ? (
+                  <>
+                    <LoadingSpinner />
+                    <span className="ml-2">Checking...</span>
+                  </>
+                ) : (
+                  <>
+                    <Search className="h-5 w-5 mr-2" />
+                    Check Status
+                  </>
+                )}
+              </Button>
+            </form>
+          </Card>
+        )}
 
         {/* Results */}
         {result && (

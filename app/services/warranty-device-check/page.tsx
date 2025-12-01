@@ -28,15 +28,17 @@ export default function WarrantyDeviceCheckPage() {
     brand: "",
     serialNumber: "",
     imei: "",
-    email: "",
+    email: session?.user?.email || "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (paymentId) {
-      // Redirect to status page after payment
-      router.push("/services/warranty-device-check/status");
+      // Redirect to status page with payment ID for auto verification
+      router.push(
+        `/services/warranty-device-check/status?paymentId=${paymentId}`
+      );
     }
   }, [paymentId, router]);
 
@@ -51,6 +53,12 @@ export default function WarrantyDeviceCheckPage() {
     const email = session?.user?.email || formData.email;
     if (!email) {
       setError("Please provide an email for payment receipt.");
+      return;
+    }
+
+    // Validate email format
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("Please enter a valid email address");
       return;
     }
 
@@ -116,10 +124,20 @@ export default function WarrantyDeviceCheckPage() {
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Check warranty status and device status for Apple and Dell devices
             </p>
-            <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-orange-100 dark:bg-orange-900/30 rounded-full">
-              <span className="text-sm font-medium text-orange-900 dark:text-orange-100">
-                Service Fee: ₦100
-              </span>
+            <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-100 dark:bg-orange-900/30 rounded-full">
+                <span className="text-sm font-medium text-orange-900 dark:text-orange-100">
+                  Service Fee: ₦100
+                </span>
+              </div>
+              <Link href="/services/warranty-device-check/status">
+                <Button
+                  variant="outline"
+                  className="border-orange-600 text-orange-600 hover:bg-orange-50"
+                >
+                  Check Status
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

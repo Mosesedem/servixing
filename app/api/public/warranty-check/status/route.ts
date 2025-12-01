@@ -22,7 +22,143 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const { email, serialNumber, imei } = await req.json();
+    const { email, serialNumber, imei, paymentId } = await req.json();
+
+    // If paymentId is provided, get check from payment or create it
+    if (paymentId) {
+      const payment = await prisma.payment.findUnique({
+        where: { id: paymentId },
+        include: {
+          workOrder: {
+            include: {
+              warrantyChecks: {
+                orderBy: { createdAt: "desc" },
+                take: 1,
+              },
+              device: true,
+            },
+          },
+        },
+      });
+
+      if (!payment) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: { code: "NOT_FOUND", message: "Payment not found" },
+          },
+          { status: 404 }
+        );
+      }
+
+      // If warranty check doesn't exist yet, ensure payment is PAID then create it
+      if (!payment.workOrder?.warrantyChecks?.[0]) {
+        // Guard: avoid running check for unpaid payments
+        if (
+          payment.status !== "PAID" &&
+          payment.workOrder?.paymentStatus !== "PAID"
+        ) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: {
+                code: "PAYMENT_NOT_PAID",
+                message:
+                  "Payment not verified yet. Please retry after verification.",
+              },
+            },
+            { status: 409 }
+          );
+        }
+
+        if (!payment.workOrder?.device) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: {
+                code: "NOT_FOUND",
+                message: "Device information not found",
+              },
+            },
+            { status: 404 }
+          );
+        }
+
+        // Import the checkWarranty function
+        const { checkWarranty } = await import("@/lib/warranty-check");
+
+        const device = payment.workOrder.device;
+        const result = await checkWarranty(
+          device.brand,
+          device.serialNumber || undefined,
+          device.imei || undefined
+        );
+
+        // Map provider result into structured fields
+        const normalizedStatus =
+          result.status === "active" || result.status === "in_warranty"
+            ? "SUCCESS"
+            : result.status === "expired" || result.status === "out_of_warranty"
+            ? "FAILED"
+            : result.status === "requires_verification"
+            ? "MANUAL_REQUIRED"
+            : "SUCCESS";
+
+        const warrantyCheck = await prisma.warrantyCheck.create({
+          data: {
+            workOrderId: payment.workOrder.id,
+            provider: result.provider,
+            initiatedBy: "payment_auto",
+            status: normalizedStatus,
+            warrantyStatus: result.status || null,
+            warrantyExpiry: result.expiryDate
+              ? new Date(result.expiryDate)
+              : null,
+            purchaseDate: result.purchaseDate
+              ? new Date(result.purchaseDate)
+              : null,
+            coverageStart: result.coverageStart
+              ? new Date(result.coverageStart)
+              : null,
+            coverageEnd: result.coverageEnd
+              ? new Date(result.coverageEnd)
+              : null,
+            deviceStatus: result.deviceStatus || null,
+            result: {
+              ...result,
+              checkedAt: new Date().toISOString(),
+              serialNumber: device.serialNumber,
+              imei: device.imei,
+            },
+            errorMessage: null,
+          },
+        });
+
+        return NextResponse.json({
+          success: true,
+          status: warrantyCheck.status,
+          provider: warrantyCheck.provider,
+          warrantyStatus: warrantyCheck.warrantyStatus,
+          warrantyExpiry: warrantyCheck.warrantyExpiry,
+          deviceStatus: warrantyCheck.deviceStatus,
+          paymentStatus: payment.workOrder.paymentStatus,
+          errorMessage: warrantyCheck.errorMessage,
+        });
+      } else {
+        // Return existing check
+        const check = payment.workOrder.warrantyChecks[0];
+        return NextResponse.json({
+          success: true,
+          status: check.status,
+          provider: check.provider,
+          warrantyStatus: check.warrantyStatus,
+          warrantyExpiry: check.warrantyExpiry,
+          deviceStatus: check.deviceStatus,
+          paymentStatus: payment.workOrder.paymentStatus,
+          errorMessage: check.errorMessage,
+        });
+      }
+    }
 
     if (!email && !serialNumber && !imei) {
       return NextResponse.json(
