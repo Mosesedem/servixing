@@ -47,7 +47,7 @@ export default function CentralizedCheckoutPage() {
 
     const fetchPaymentData = async () => {
       try {
-        const response = await fetch(`/api/payments/${paymentId}`);
+        const response = await fetch(`/api/public/payments/${paymentId}`);
         if (!response.ok) {
           const err = await response.json();
           throw new Error(
@@ -58,8 +58,8 @@ export default function CentralizedCheckoutPage() {
 
         setPaymentData({
           amount: parseFloat(data.amount),
-          email: data.user.email,
-          workOrderId: data.workOrderId || undefined,
+          email: data.metadata?.email || "",
+          workOrderId: data.metadata?.workOrderId || undefined,
           description: data.metadata?.description || "Payment for order",
           existingPaymentId: paymentId,
           metadata: data.metadata || {},
@@ -84,44 +84,21 @@ export default function CentralizedCheckoutPage() {
     try {
       let initResponse;
 
-      if (paymentData.existingPaymentId) {
-        // Update provider first
-        const updateRes = await fetch(
-          `/api/payments/${paymentData.existingPaymentId}/update-provider`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ provider: selectedProvider }),
-          }
-        );
-
-        if (!updateRes.ok) throw new Error("Failed to update payment method");
-
-        // Then re-initialize with selected provider
-        initResponse = await fetch("/api/payments/initialize", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            workOrderId: paymentData.workOrderId,
-            amount: paymentData.amount,
-            email: paymentData.email,
-            provider: selectedProvider,
-            metadata: {
-              ...paymentData.metadata,
-              existingPaymentId: paymentData.existingPaymentId,
-            },
-          }),
-        });
-      } else {
-        initResponse = await fetch("/api/payments/initialize", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...paymentData,
-            provider: selectedProvider,
-          }),
-        });
-      }
+      // For public payments, use public initialize which handles existingPaymentId
+      initResponse = await fetch("/api/public/payments/initialize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workOrderId: paymentData.workOrderId,
+          amount: paymentData.amount,
+          email: paymentData.email,
+          provider: selectedProvider,
+          metadata: {
+            ...paymentData.metadata,
+            existingPaymentId: paymentData.existingPaymentId,
+          },
+        }),
+      });
 
       if (!initResponse.ok) {
         const err = await initResponse.json();

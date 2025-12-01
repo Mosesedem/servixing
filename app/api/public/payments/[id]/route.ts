@@ -33,6 +33,8 @@ export async function GET(
         status: true,
         amount: true,
         currency: true,
+        provider: true,
+        paystackReference: true,
         metadata: true,
         createdAt: true,
       },

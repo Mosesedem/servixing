@@ -68,7 +68,7 @@ export default function WarrantyDeviceCheckPage() {
         const verifyRes = await fetch("/api/public/payments/verify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ reference: paymentId }),
+          body: JSON.stringify({ reference: paymentData.paystackReference }),
         });
 
         if (!verifyRes.ok) {
@@ -156,7 +156,9 @@ export default function WarrantyDeviceCheckPage() {
       const data = await res.json();
 
       // Redirect to centralized checkout with payment ID
-      window.location.href = `/payment/checkout?paymentId=${data.paymentId}`;
+      window.location.href = `/payment/checkout?paymentId=${
+        data.data?.paymentId || data.paymentId
+      }`;
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
       setLoading(false);

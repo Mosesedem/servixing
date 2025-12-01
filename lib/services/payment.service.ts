@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { db } from "@/lib/db";
 import { Decimal } from "decimal.js";
+import { randomUUID } from "crypto";
 import {
   NotFoundError,
   PaymentError,
@@ -104,6 +105,8 @@ export class PaymentService {
    */
   private async initializePaystackPayment(payment: any, data: any) {
     try {
+      const reference = randomUUID();
+
       const response = await fetch(
         "https://api.paystack.co/transaction/initialize",
         {
@@ -115,7 +118,7 @@ export class PaymentService {
           body: JSON.stringify({
             email: data.email,
             amount: Math.round(data.amount * 100), // Convert to kobo
-            reference: payment.id,
+            reference,
             metadata: {
               paymentId: payment.id,
               workOrderId: data.workOrderId,
@@ -140,7 +143,7 @@ export class PaymentService {
       await db.payment.update({
         where: { id: payment.id },
         data: {
-          paystackReference: payment.id,
+          paystackReference: reference,
           paystackAccessCode: result.data.access_code,
         },
       });
@@ -160,7 +163,7 @@ export class PaymentService {
 
       return {
         paymentId: payment.id,
-        reference: payment.id,
+        reference,
         authorizationUrl: result.data.authorization_url,
         accessCode: result.data.access_code,
       };
@@ -188,6 +191,8 @@ export class PaymentService {
         throw new PaymentError("Etegram configuration missing");
       }
 
+      const reference = randomUUID();
+
       const response = await fetch(
         `https://api-checkout.etegram.com/api/transaction/initialize/${projectId}`,
         {
@@ -202,7 +207,7 @@ export class PaymentService {
             phone: data.metadata?.phone || "",
             firstname: data.metadata?.firstName || "",
             lastname: data.metadata?.lastName || "",
-            reference: payment.id,
+            reference,
           }),
         }
       );
@@ -219,7 +224,7 @@ export class PaymentService {
       await db.payment.update({
         where: { id: payment.id },
         data: {
-          paystackReference: result.data.reference, // Using paystackReference field for consistency
+          paystackReference: result.data.reference || reference, // Using paystackReference field for consistency
           paystackAccessCode: result.data.access_code,
         },
       });
@@ -239,7 +244,7 @@ export class PaymentService {
 
       return {
         paymentId: payment.id,
-        reference: result.data.reference,
+        reference: result.data.reference || reference,
         authorizationUrl: result.data.authorization_url,
         accessCode: result.data.access_code,
       };
@@ -263,6 +268,8 @@ export class PaymentService {
         throw new PaymentError("Flutterwave configuration missing");
       }
 
+      const reference = randomUUID();
+
       const response = await fetch(
         "https://api.flutterwave.com/orchestration/direct-charges",
         {
@@ -270,13 +277,13 @@ export class PaymentService {
           headers: {
             Authorization: `Bearer ${accessToken}`,
             "Content-Type": "application/json",
-            "X-Trace-Id": payment.id,
-            "X-Idempotency-Key": payment.id,
+            "X-Trace-Id": reference,
+            "X-Idempotency-Key": reference,
           },
           body: JSON.stringify({
             amount: data.amount,
             currency: "NGN",
-            reference: payment.id,
+            reference,
             customer: {
               email: data.email,
               name: {
@@ -315,7 +322,7 @@ export class PaymentService {
       await db.payment.update({
         where: { id: payment.id },
         data: {
-          paystackReference: result.data.reference || payment.id,
+          paystackReference: result.data.reference || reference,
           paystackAccessCode: result.data.id,
         },
       });
@@ -335,7 +342,7 @@ export class PaymentService {
 
       return {
         paymentId: payment.id,
-        reference: result.data.reference || payment.id,
+        reference: result.data.reference || reference,
         authorizationUrl: result.data.next_action?.redirect?.url,
         accessCode: result.data.id,
       };
