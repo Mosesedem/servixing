@@ -4,11 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { sendEmail } from "@/lib/mailer";
 
-/**
- * GET /api/admin/warranty-checks/[id]
- * Get detailed info for a warranty check
- * Admin only
- */
+// Clean reimplementation of GET/PATCH/DELETE for a single warranty check
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -21,7 +18,6 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user is admin
     const adminUser = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { role: true },
@@ -34,41 +30,13 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    if (typeof warrantyStatus !== "undefined")
-      updateData.warrantyStatus = warrantyStatus;
-    if (typeof deviceStatus !== "undefined")
-      updateData.deviceStatus = deviceStatus;
-    if (typeof additionalNotes !== "undefined")
-      updateData.additionalNotes = additionalNotes;
-
-    const parseDate = (value: string | null | undefined) => {
-      if (!value) return null;
-      const d = new Date(value);
-      return isNaN(d.getTime()) ? null : d;
-    };
-
-    if (typeof warrantyExpiry !== "undefined")
-      updateData.warrantyExpiry = parseDate(warrantyExpiry);
-    if (typeof purchaseDate !== "undefined")
-      updateData.purchaseDate = parseDate(purchaseDate);
-    if (typeof coverageStart !== "undefined")
-      updateData.coverageStart = parseDate(coverageStart);
-    if (typeof coverageEnd !== "undefined")
-      updateData.coverageEnd = parseDate(coverageEnd);
-    const checkId = id;
-
     const check = await prisma.warrantyCheck.findUnique({
-      where: { id: checkId },
+      where: { id },
       include: {
         workOrder: {
           include: {
             user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                phone: true,
-              },
+              select: { id: true, name: true, email: true, phone: true },
             },
             device: true,
           },
@@ -93,11 +61,6 @@ export async function GET(
   }
 }
 
-/**
- * PATCH /api/admin/warranty-checks/[id]
- * Update a warranty check
- * Admin only
- */
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -110,7 +73,6 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user is admin
     const adminUser = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { role: true },
@@ -123,76 +85,6 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const checkId = id;
-    const { status, sendEmail: shouldSendEmail } = await req.json();
-
-    const updateData: any = { status };
-
-    if (
-      status === "SUCCESS" ||
-      status === "FAILED" ||
-      status === "MANUAL_REQUIRED"
-    ) {
-      updateData.finishedAt = new Date();
-    }
-
-    const updatedCheck = await prisma.warrantyCheck.update({
-      where: { id: checkId },
-      data: updateData,
-      include: {
-        workOrder: {
-          include: {
-            user: {
-              select: {
-                name: true,
-                email: true,
-              },
-            },
-            device: {
-              select: {
-                brand: true,
-                model: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    // Send email notification if requested
-    if (shouldSendEmail && updatedCheck.workOrder?.user?.email) {
-      const statusMessages = {
-        SUCCESS: "Your warranty check has been completed successfully.",
-        FAILED:
-          "Your warranty check has failed. Manual verification may be required.",
-        MANUAL_REQUIRED: "Your warranty check requires manual verification.",
-      };
-      const statusMessage =
-        statusMessages[status as keyof typeof statusMessages] ||
-        "Your warranty check status has been updated.";
-
-      let emailHtml = `
-        <h2>Hello ${
-          updatedCheck.workOrder?.user?.name || "Valued Customer"
-        },</h2>
-        <p>${statusMessage}</p>
-        <p><strong>Provider:</strong> ${updatedCheck.provider.toUpperCase()}</p>
-        <p><strong>Device:</strong> ${
-          updatedCheck.workOrder?.device?.brand || "Unknown"
-        } ${updatedCheck.workOrder?.device?.model || "Device"}</p>
-      `;
-
-      if (status === "SUCCESS" && updatedCheck.result) {
-        const result = updatedCheck.result as any;
-        emailHtml += `
-          <h3>Warranty & Device Status Results:</h3>
-          <ul>
-        `;
-        if (result.warrantyStatus) {
-          emailHtml += `<li><strong>Warranty Status:</strong> ${result.warrantyStatus}</li>`;
-        }
-        if (result.expiryDate) {
-    const checkId = id;
     const {
       status,
       sendEmail: shouldSendEmail,
@@ -238,31 +130,26 @@ export async function PATCH(
     }
 
     const updatedCheck = await prisma.warrantyCheck.update({
-      where: { id: checkId },
+      where: { id },
       data: updateData,
       include: {
         workOrder: {
           include: {
-            user: {
-              select: {
-                name: true,
-                email: true,
-              },
-            },
+            user: { select: { name: true, email: true } },
             device: true,
           },
         },
       },
     });
 
-    // Send email notification if requested
     if (shouldSendEmail && updatedCheck.workOrder?.user?.email) {
       const statusMessages = {
         SUCCESS: "Your warranty check has been completed successfully.",
         FAILED:
           "Your warranty check has failed. Manual verification may be required.",
         MANUAL_REQUIRED: "Your warranty check requires manual verification.",
-      };
+      } as const;
+
       const statusMessage =
         statusMessages[status as keyof typeof statusMessages] ||
         "Your warranty check status has been updated.";
@@ -283,36 +170,29 @@ export async function PATCH(
       const formatDate = (d?: Date | null) =>
         d ? new Date(d).toLocaleDateString() : null;
 
+      const rawResult = (updatedCheck.result || {}) as any;
+
       const effectiveWarrantyStatus =
-        updatedCheck.warrantyStatus ||
-        ((updatedCheck.result as any)?.status as string | undefined);
+        updatedCheck.warrantyStatus || (rawResult.status as string | undefined);
       const effectiveDeviceStatus =
         updatedCheck.deviceStatus ||
-        ((updatedCheck.result as any)?.deviceStatus as string | undefined);
+        (rawResult.deviceStatus as string | undefined);
 
       const warrantyExpiryDate =
         updatedCheck.warrantyExpiry ||
-        ((updatedCheck.result as any)?.expiryDate
-          ? new Date((updatedCheck.result as any).expiryDate)
-          : null);
+        (rawResult.expiryDate ? new Date(rawResult.expiryDate) : null);
 
       const purchaseDateValue =
         updatedCheck.purchaseDate ||
-        ((updatedCheck.result as any)?.purchaseDate
-          ? new Date((updatedCheck.result as any).purchaseDate)
-          : null);
+        (rawResult.purchaseDate ? new Date(rawResult.purchaseDate) : null);
 
       const coverageStartValue =
         updatedCheck.coverageStart ||
-        ((updatedCheck.result as any)?.coverageStart
-          ? new Date((updatedCheck.result as any).coverageStart)
-          : null);
+        (rawResult.coverageStart ? new Date(rawResult.coverageStart) : null);
 
       const coverageEndValue =
         updatedCheck.coverageEnd ||
-        ((updatedCheck.result as any)?.coverageEnd
-          ? new Date((updatedCheck.result as any).coverageEnd)
-          : null);
+        (rawResult.coverageEnd ? new Date(rawResult.coverageEnd) : null);
 
       const details: string[] = [];
       if (effectiveWarrantyStatus)
@@ -379,12 +259,64 @@ export async function PATCH(
         console.error("Failed to send warranty check email:", emailError);
       }
     }
-    // Delete the check
-    await prisma.warrantyCheck.delete({
-      where: { id: checkId },
+
+    return NextResponse.json({ check: updatedCheck });
+  } catch (error) {
+    console.error("Update warranty check error:", error);
+    return NextResponse.json(
+      { error: "Failed to update warranty check" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const adminUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true },
     });
 
-    // Send email notification if requested
+    if (!adminUser || adminUser.role !== "SUPER_ADMIN") {
+      return NextResponse.json(
+        { error: "Forbidden - Super Admin only" },
+        { status: 403 }
+      );
+    }
+
+    const { sendEmail: shouldSendEmail } = await req.json();
+
+    const check = await prisma.warrantyCheck.findUnique({
+      where: { id },
+      include: {
+        workOrder: {
+          include: {
+            user: { select: { email: true, name: true } },
+            device: true,
+          },
+        },
+      },
+    });
+
+    if (!check) {
+      return NextResponse.json(
+        { error: "Warranty check not found" },
+        { status: 404 }
+      );
+    }
+
+    await prisma.warrantyCheck.delete({ where: { id } });
+
     if (shouldSendEmail && check.workOrder?.user?.email) {
       try {
         await sendEmail({

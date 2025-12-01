@@ -9,6 +9,9 @@ export async function checkWarranty(
   provider: string;
   expiryDate?: string;
   deviceStatus?: string;
+  purchaseDate?: string;
+  coverageStart?: string;
+  coverageEnd?: string;
 }> {
   const upperBrand = brand.toUpperCase();
 

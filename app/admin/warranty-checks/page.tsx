@@ -495,9 +495,9 @@ export default function AdminWarrantyChecks() {
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
-                  <Link href={`/admin/work-orders/${check.workOrderId}`}>
+                  <Link href={`/admin/warranty-checks/${check.id}`}>
                     <Button variant="outline" size="sm">
-                      View Work Order
+                      View Details
                     </Button>
                   </Link>
                 </div>
