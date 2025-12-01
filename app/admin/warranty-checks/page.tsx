@@ -41,6 +41,7 @@ interface WarrantyCheck {
   workOrderId: string;
   workOrder: {
     id: string;
+    paymentStatus: string;
     user: { name: string; email: string };
     device: {
       brand: string;
@@ -185,6 +186,21 @@ export default function AdminWarrantyChecks() {
     }
   };
 
+  const getPaymentStatusColor = (status: string) => {
+    switch (status) {
+      case "PENDING":
+        return "bg-yellow-100 text-yellow-800";
+      case "PAID":
+        return "bg-green-100 text-green-800";
+      case "FAILED":
+        return "bg-red-100 text-red-800";
+      case "REFUNDED":
+        return "bg-blue-100 text-blue-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
   const formatStatus = (status: string) => {
     return status
       .split("_")
@@ -267,6 +283,15 @@ export default function AdminWarrantyChecks() {
                     >
                       {formatStatus(check.status)}
                     </span>
+                    {check.workOrder && (
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-medium ${getPaymentStatusColor(
+                          check.workOrder.paymentStatus
+                        )}`}
+                      >
+                        Payment: {formatStatus(check.workOrder.paymentStatus)}
+                      </span>
+                    )}
                     {check.finishedAt && (
                       <span className="text-muted-foreground">
                         Completed: {new Date(check.finishedAt).toLocaleString()}

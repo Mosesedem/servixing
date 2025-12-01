@@ -6,6 +6,22 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Edit, RefreshCw } from "lucide-react";
 
 interface WarrantyCheck {
@@ -43,6 +59,16 @@ export default function WarrantyCheckDetails() {
   const [check, setCheck] = useState<WarrantyCheck | null>(null);
   const [loading, setLoading] = useState(true);
   const [retrying, setRetrying] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [sendEmail, setSendEmail] = useState(true);
+  const [newStatus, setNewStatus] = useState("");
+  const [formWarrantyStatus, setFormWarrantyStatus] = useState("");
+  const [formWarrantyExpiry, setFormWarrantyExpiry] = useState("");
+  const [formPurchaseDate, setFormPurchaseDate] = useState("");
+  const [formCoverageStart, setFormCoverageStart] = useState("");
+  const [formCoverageEnd, setFormCoverageEnd] = useState("");
+  const [formDeviceStatus, setFormDeviceStatus] = useState("");
+  const [formNotes, setFormNotes] = useState("");
 
   useEffect(() => {
     fetchCheck();
@@ -75,6 +101,43 @@ export default function WarrantyCheckDetails() {
       console.error("Error retrying warranty check:", error);
     } finally {
       setRetrying(false);
+    }
+  };
+
+  const handleStatusUpdate = async (status: string) => {
+    if (!check) return;
+    setUpdating(true);
+    try {
+      const response = await fetch(`/api/admin/warranty-checks/${check.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status,
+          sendEmail,
+          warrantyStatus: formWarrantyStatus || null,
+          warrantyExpiry: formWarrantyExpiry || null,
+          purchaseDate: formPurchaseDate || null,
+          coverageStart: formCoverageStart || null,
+          coverageEnd: formCoverageEnd || null,
+          deviceStatus: formDeviceStatus || null,
+          additionalNotes: formNotes || null,
+        }),
+      });
+      if (response.ok) {
+        fetchCheck();
+        setNewStatus("");
+        setFormWarrantyStatus("");
+        setFormWarrantyExpiry("");
+        setFormPurchaseDate("");
+        setFormCoverageStart("");
+        setFormCoverageEnd("");
+        setFormDeviceStatus("");
+        setFormNotes("");
+      }
+    } catch (error) {
+      console.error("Error updating warranty check:", error);
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -189,12 +252,180 @@ export default function WarrantyCheckDetails() {
                   {retrying ? "Retrying..." : "Retry Check"}
                 </Button>
               )}
-              <Link href={`/admin/warranty-checks/${check.id}/edit`}>
-                <Button variant="outline" size="sm">
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </Button>
-              </Link>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setNewStatus(check.status);
+                      setFormWarrantyStatus(check.warrantyStatus || "");
+                      setFormWarrantyExpiry(
+                        check.warrantyExpiry
+                          ? check.warrantyExpiry.substring(0, 10)
+                          : ""
+                      );
+                      setFormPurchaseDate(
+                        check.purchaseDate
+                          ? check.purchaseDate.substring(0, 10)
+                          : ""
+                      );
+                      setFormCoverageStart(
+                        check.coverageStart
+                          ? check.coverageStart.substring(0, 10)
+                          : ""
+                      );
+                      setFormCoverageEnd(
+                        check.coverageEnd
+                          ? check.coverageEnd.substring(0, 10)
+                          : ""
+                      );
+                      setFormDeviceStatus(check.deviceStatus || "");
+                      setFormNotes(check.additionalNotes || "");
+                    }}
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Update Warranty Check Status</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        New Status
+                      </label>
+                      <Select value={newStatus} onValueChange={setNewStatus}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="QUEUED">Queued</SelectItem>
+                          <SelectItem value="IN_PROGRESS">
+                            In Progress
+                          </SelectItem>
+                          <SelectItem value="SUCCESS">Success</SelectItem>
+                          <SelectItem value="FAILED">Failed</SelectItem>
+                          <SelectItem value="MANUAL_REQUIRED">
+                            Manual Required
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Warranty Status
+                        </label>
+                        <Input
+                          value={formWarrantyStatus}
+                          onChange={(e) =>
+                            setFormWarrantyStatus(e.target.value)
+                          }
+                          placeholder="e.g. In Warranty, Out of Warranty"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Device Status
+                        </label>
+                        <Input
+                          value={formDeviceStatus}
+                          onChange={(e) => setFormDeviceStatus(e.target.value)}
+                          placeholder="e.g. Clean, Blacklisted"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Warranty Expiry Date
+                        </label>
+                        <Input
+                          type="date"
+                          value={formWarrantyExpiry}
+                          onChange={(e) =>
+                            setFormWarrantyExpiry(e.target.value)
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Purchase Date
+                        </label>
+                        <Input
+                          type="date"
+                          value={formPurchaseDate}
+                          onChange={(e) => setFormPurchaseDate(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Coverage Start
+                        </label>
+                        <Input
+                          type="date"
+                          value={formCoverageStart}
+                          onChange={(e) => setFormCoverageStart(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Coverage End
+                        </label>
+                        <Input
+                          type="date"
+                          value={formCoverageEnd}
+                          onChange={(e) => setFormCoverageEnd(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Additional Notes (included in email)
+                      </label>
+                      <textarea
+                        className="w-full border rounded-md px-3 py-2 text-sm"
+                        rows={4}
+                        value={formNotes}
+                        onChange={(e) => setFormNotes(e.target.value)}
+                        placeholder="Add any manual findings or comments for the customer..."
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="sendEmail"
+                        checked={sendEmail}
+                        onCheckedChange={(checked) =>
+                          setSendEmail(checked === true)
+                        }
+                      />
+                      <label
+                        htmlFor="sendEmail"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        Send email notification
+                      </label>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleStatusUpdate(newStatus)}
+                        disabled={updating}
+                      >
+                        {updating ? "Updating..." : "Update Status"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setNewStatus("");
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
 

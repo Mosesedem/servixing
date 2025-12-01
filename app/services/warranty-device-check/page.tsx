@@ -18,13 +18,6 @@ import {
   Info,
 } from "lucide-react";
 
-interface WarrantyResult {
-  status: string;
-  provider: string;
-  expiryDate?: string;
-  deviceStatus?: string;
-}
-
 export default function WarrantyDeviceCheckPage() {
   const { data: session } = useSession();
   const router = useRouter();
@@ -38,84 +31,14 @@ export default function WarrantyDeviceCheckPage() {
     email: "",
   });
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<WarrantyResult | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (paymentId) {
-      verifyPaymentAndCheck();
+      // Redirect to status page after payment
+      router.push("/services/warranty-device-check/status");
     }
-  }, [paymentId]);
-
-  const verifyPaymentAndCheck = async () => {
-    if (!paymentId) return;
-
-    setLoading(true);
-    try {
-      // Get payment details (public endpoint)
-      const paymentRes = await fetch(`/api/public/payments/${paymentId}`);
-
-      if (!paymentRes.ok) {
-        throw new Error("Failed to fetch payment details");
-      }
-
-      const paymentResponse = await paymentRes.json();
-      const paymentData = paymentResponse.data || paymentResponse;
-
-      // Check if payment is already verified and paid
-      if (paymentData.status !== "PAID") {
-        // Verify payment
-        const verifyRes = await fetch("/api/public/payments/verify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ reference: paymentData.paystackReference }),
-        });
-
-        if (!verifyRes.ok) {
-          throw new Error("Payment verification failed");
-        }
-
-        const verifyData = await verifyRes.json();
-
-        if (
-          verifyData.data?.status !== "success" &&
-          verifyData.status !== "success"
-        ) {
-          throw new Error("Payment not successful");
-        }
-      }
-
-      // Get metadata from payment
-      const { brand, serialNumber, imei } = paymentData.metadata || {};
-
-      if (!brand || !serialNumber) {
-        throw new Error("Invalid payment metadata");
-      }
-
-      // Perform the check
-      const checkRes = await fetch("/api/public/warranty-check", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ brand, serialNumber, imei }),
-      });
-
-      if (!checkRes.ok) {
-        const errorData = await checkRes.json();
-        throw new Error(errorData.error || "Check failed");
-      }
-
-      const checkData = await checkRes.json();
-      // Instead of setting result, set a flag for completion
-      setResult({
-        status: "processing",
-        provider: checkData.provider || "Unknown",
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [paymentId, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,97 +93,6 @@ export default function WarrantyDeviceCheckPage() {
   };
 
   // Public page: allow usage without login
-
-  if (result) {
-    return (
-      <div className="min-h-screen bg-background">
-        {/* Header */}
-        <section className="bg-linear-to-br from-orange-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 py-12">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <Link
-              href="/services"
-              className="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 mb-4"
-            >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back to Services
-            </Link>
-            <h1 className="text-3xl sm:text-4xl font-bold">
-              Device Check Results
-            </h1>
-          </div>
-        </section>
-
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <Card className="p-6 sm:p-8">
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 mb-4">
-                <Shield className="h-8 w-8 text-blue-600" />
-              </div>
-              <h2 className="text-2xl font-bold mb-2">Check In Progress</h2>
-              <p className="text-muted-foreground">
-                Your warranty and device status check is being processed
-              </p>
-            </div>
-
-            <div className="space-y-6">
-              {/* Processing Status */}
-              <div className="p-6 border rounded-lg bg-blue-50 dark:bg-blue-900/20">
-                <div className="flex items-start gap-4">
-                  <CheckCircle className="h-8 w-8 text-blue-600 shrink-0" />
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg mb-1">
-                      Check Initiated
-                    </h3>
-                    <p className="text-muted-foreground mb-2">
-                      Your device check has been started successfully.
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Provider:{" "}
-                      <span className="capitalize">{result.provider}</span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Email Notification */}
-              <div className="p-6 border rounded-lg bg-green-50 dark:bg-green-900/20">
-                <div className="flex items-start gap-4">
-                  <CheckCircle className="h-8 w-8 text-green-600 shrink-0" />
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg mb-1">
-                      Email Notification
-                    </h3>
-                    <p className="text-muted-foreground mb-2">
-                      You will receive an email with the complete results within
-                      2 hours.
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Check your inbox (and spam folder) for updates from
-                      Servixing.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                <Link href="/services" className="flex-1">
-                  <Button variant="outline" className="w-full">
-                    Back to Services
-                  </Button>
-                </Link>
-                <Link href="/services/warranty-device-check" className="flex-1">
-                  <Button className="w-full bg-orange-600 hover:bg-orange-700">
-                    Check Another Device
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background">

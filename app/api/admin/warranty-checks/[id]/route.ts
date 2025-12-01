@@ -34,7 +34,9 @@ export async function GET(
       where: { id },
       include: {
         workOrder: {
-          include: {
+          select: {
+            id: true,
+            paymentStatus: true,
             user: {
               select: { id: true, name: true, email: true, phone: true },
             },

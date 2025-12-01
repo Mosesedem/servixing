@@ -73,6 +73,7 @@ export async function GET(req: NextRequest) {
           workOrder: {
             select: {
               id: true,
+              paymentStatus: true,
               user: {
                 select: {
                   name: true,
