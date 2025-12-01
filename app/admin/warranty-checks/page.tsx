@@ -38,8 +38,11 @@ interface WarrantyCheck {
   errorMessage?: string;
   createdAt: string;
   finishedAt?: string;
-  workOrderId: string;
-  workOrder: {
+  workOrderId: string | null;
+  paymentId: string | null;
+  serialNumber?: string | null;
+  imei?: string | null;
+  workOrder?: {
     id: string;
     paymentStatus: string;
     user: { name: string; email: string };
@@ -49,7 +52,12 @@ interface WarrantyCheck {
       serialNumber?: string;
       imei?: string;
     };
-  };
+  } | null;
+  payment?: {
+    id: string;
+    status: string;
+    metadata?: any;
+  } | null;
 }
 
 export default function AdminWarrantyChecks() {
@@ -253,25 +261,40 @@ export default function AdminWarrantyChecks() {
                       <h3 className="font-semibold text-lg">
                         {check.provider.toUpperCase()} Warranty Check
                       </h3>
-                      <p className="text-sm text-muted-foreground">
-                        {check.workOrder?.user
-                          ? `${check.workOrder.user.name} (${check.workOrder.user.email})`
-                          : "User information not available"}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {check.workOrder?.device ? (
-                          <>
-                            {check.workOrder.device.brand}{" "}
-                            {check.workOrder.device.model}
-                            {check.workOrder.device.serialNumber &&
-                              ` - SN: ${check.workOrder.device.serialNumber}`}
-                            {check.workOrder.device.imei &&
-                              ` - IMEI: ${check.workOrder.device.imei}`}
-                          </>
-                        ) : (
-                          "Device information not available"
-                        )}
-                      </p>
+                      {check.workOrder ? (
+                        <>
+                          <p className="text-sm text-muted-foreground">
+                            {check.workOrder.user
+                              ? `${check.workOrder.user.name} (${check.workOrder.user.email})`
+                              : "User information not available"}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {check.workOrder.device ? (
+                              <>
+                                {check.workOrder.device.brand}{" "}
+                                {check.workOrder.device.model}
+                                {check.workOrder.device.serialNumber &&
+                                  ` - SN: ${check.workOrder.device.serialNumber}`}
+                                {check.workOrder.device.imei &&
+                                  ` - IMEI: ${check.workOrder.device.imei}`}
+                              </>
+                            ) : (
+                              "Device information not available"
+                            )}
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-sm text-muted-foreground">
+                            Public Check -{" "}
+                            {check.serialNumber && `SN: ${check.serialNumber}`}{" "}
+                            {check.imei && `IMEI: ${check.imei}`}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Payment: {check.payment?.status || "Unknown"}
+                          </p>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -283,15 +306,20 @@ export default function AdminWarrantyChecks() {
                     >
                       {formatStatus(check.status)}
                     </span>
-                    {check.workOrder && (
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${getPaymentStatusColor(
-                          check.workOrder.paymentStatus
-                        )}`}
-                      >
-                        Payment: {formatStatus(check.workOrder.paymentStatus)}
-                      </span>
-                    )}
+                    <span
+                      className={`px-2 py-1 rounded text-xs font-medium ${getPaymentStatusColor(
+                        check.workOrder?.paymentStatus ||
+                          check.payment?.status ||
+                          "UNKNOWN"
+                      )}`}
+                    >
+                      Payment:{" "}
+                      {formatStatus(
+                        check.workOrder?.paymentStatus ||
+                          check.payment?.status ||
+                          "UNKNOWN"
+                      )}
+                    </span>
                     {check.finishedAt && (
                       <span className="text-muted-foreground">
                         Completed: {new Date(check.finishedAt).toLocaleString()}

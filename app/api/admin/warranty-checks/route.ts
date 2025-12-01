@@ -41,6 +41,8 @@ export async function GET(req: NextRequest) {
     if (search) {
       where.OR = [
         { provider: { contains: search, mode: "insensitive" } },
+        { serialNumber: { contains: search, mode: "insensitive" } },
+        { imei: { contains: search, mode: "insensitive" } },
         {
           workOrder: {
             user: {
@@ -88,6 +90,13 @@ export async function GET(req: NextRequest) {
                   imei: true,
                 },
               },
+            },
+          },
+          payment: {
+            select: {
+              id: true,
+              status: true,
+              metadata: true,
             },
           },
         },

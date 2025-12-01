@@ -40,44 +40,11 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Special handling for warranty check payments
+    // Special handling for warranty check payments - no workOrder needed
     let workOrderId = data.workOrderId;
-    if (data.metadata?.service === "warranty-check" && !workOrderId) {
-      // Create device record
-      const device = await prisma.device.create({
-        data: {
-          userId: user.id,
-          deviceType: "unknown",
-          brand: data.metadata.brand,
-          model: "Unknown Model",
-          serialNumber: data.metadata.serialNumber || null,
-          imei: data.metadata.imei || null,
-          description: `Device for warranty check payment`,
-        },
-      });
-
-      // Create work order for warranty check
-      const workOrder = await prisma.workOrder.create({
-        data: {
-          userId: user.id,
-          deviceId: device.id,
-          contactName: null,
-          contactEmail: email,
-          contactPhone: null,
-          issueDescription: `Warranty check requested for ${data.metadata.brand} device`,
-          dropoffType: "DROPOFF",
-          status: "CREATED",
-          warrantyChecked: true,
-          totalAmount: new Decimal(data.amount),
-          metadata: {
-            submittedAt: new Date().toISOString(),
-            source: "public_warranty_check",
-            ...data.metadata,
-          },
-        },
-      });
-
-      workOrderId = workOrder.id;
+    if (data.metadata?.service === "warranty-check") {
+      // For warranty checks, workOrderId remains undefined
+      workOrderId = undefined;
     }
 
     const result = await paymentService.initializePayment({

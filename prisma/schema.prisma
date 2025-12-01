@@ -367,10 +367,11 @@ model Payment {
   updatedAt DateTime @updatedAt
 
   // Relations
-  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workOrder WorkOrder?   @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
-  logs      PaymentLog[]
-  refunds   Refund[]
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workOrder      WorkOrder?      @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
+  logs           PaymentLog[]
+  refunds        Refund[]
+  warrantyChecks WarrantyCheck[] // For public warranty checks
 
   @@index([userId])
   @@index([status])
@@ -479,10 +480,15 @@ model Part {
 model WarrantyCheck {
   id          String  @id @default(cuid())
   workOrderId String?
+  paymentId   String? // For public warranty checks
 
   provider    String // "apple", "dell"
   initiatedBy String // userId or "public"
   status      CheckStatus @default(QUEUED)
+
+  // Device info for public checks
+  serialNumber String?
+  imei         String?
 
   // Structured result fields for admin overrides & email
   warrantyStatus  String?
@@ -502,9 +508,13 @@ model WarrantyCheck {
 
   // Relations
   workOrder WorkOrder? @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  payment   Payment?   @relation(fields: [paymentId], references: [id], onDelete: Cascade)
 
   @@index([workOrderId])
+  @@index([paymentId])
   @@index([status])
+  @@index([serialNumber])
+  @@index([imei])
   @@map("warranty_checks")
 }
 
