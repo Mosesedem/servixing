@@ -26,6 +26,14 @@ interface WarrantyCheck {
   id: string;
   provider: string;
   status: string;
+  // Structured fields from DB
+  warrantyStatus?: string | null;
+  warrantyExpiry?: string | null;
+  purchaseDate?: string | null;
+  coverageStart?: string | null;
+  coverageEnd?: string | null;
+  deviceStatus?: string | null;
+  additionalNotes?: string | null;
   result?: any;
   errorMessage?: string;
   createdAt: string;
@@ -55,6 +63,13 @@ export default function AdminWarrantyChecks() {
   const [editingCheck, setEditingCheck] = useState<WarrantyCheck | null>(null);
   const [sendEmail, setSendEmail] = useState(true);
   const [newStatus, setNewStatus] = useState("");
+  const [formWarrantyStatus, setFormWarrantyStatus] = useState("");
+  const [formWarrantyExpiry, setFormWarrantyExpiry] = useState("");
+  const [formPurchaseDate, setFormPurchaseDate] = useState("");
+  const [formCoverageStart, setFormCoverageStart] = useState("");
+  const [formCoverageEnd, setFormCoverageEnd] = useState("");
+  const [formDeviceStatus, setFormDeviceStatus] = useState("");
+  const [formNotes, setFormNotes] = useState("");
 
   useEffect(() => {
     fetchChecks();
@@ -92,12 +107,26 @@ export default function AdminWarrantyChecks() {
         body: JSON.stringify({
           status,
           sendEmail,
+          warrantyStatus: formWarrantyStatus || null,
+          warrantyExpiry: formWarrantyExpiry || null,
+          purchaseDate: formPurchaseDate || null,
+          coverageStart: formCoverageStart || null,
+          coverageEnd: formCoverageEnd || null,
+          deviceStatus: formDeviceStatus || null,
+          additionalNotes: formNotes || null,
         }),
       });
       if (response.ok) {
         fetchChecks();
         setEditingCheck(null);
         setNewStatus("");
+        setFormWarrantyStatus("");
+        setFormWarrantyExpiry("");
+        setFormPurchaseDate("");
+        setFormCoverageStart("");
+        setFormCoverageEnd("");
+        setFormDeviceStatus("");
+        setFormNotes("");
       }
     } catch (error) {
       console.error("Error updating warranty check:", error);
@@ -209,16 +238,23 @@ export default function AdminWarrantyChecks() {
                         {check.provider.toUpperCase()} Warranty Check
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        {check.workOrder.user.name} (
-                        {check.workOrder.user.email})
+                        {check.workOrder?.user
+                          ? `${check.workOrder.user.name} (${check.workOrder.user.email})`
+                          : "User information not available"}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {check.workOrder.device.brand}{" "}
-                        {check.workOrder.device.model}
-                        {check.workOrder.device.serialNumber &&
-                          ` - SN: ${check.workOrder.device.serialNumber}`}
-                        {check.workOrder.device.imei &&
-                          ` - IMEI: ${check.workOrder.device.imei}`}
+                        {check.workOrder?.device ? (
+                          <>
+                            {check.workOrder.device.brand}{" "}
+                            {check.workOrder.device.model}
+                            {check.workOrder.device.serialNumber &&
+                              ` - SN: ${check.workOrder.device.serialNumber}`}
+                            {check.workOrder.device.imei &&
+                              ` - IMEI: ${check.workOrder.device.imei}`}
+                          </>
+                        ) : (
+                          "Device information not available"
+                        )}
                       </p>
                     </div>
                   </div>
@@ -270,6 +306,29 @@ export default function AdminWarrantyChecks() {
                         onClick={() => {
                           setEditingCheck(check);
                           setNewStatus(check.status);
+                          setFormWarrantyStatus(check.warrantyStatus || "");
+                          setFormWarrantyExpiry(
+                            check.warrantyExpiry
+                              ? check.warrantyExpiry.substring(0, 10)
+                              : ""
+                          );
+                          setFormPurchaseDate(
+                            check.purchaseDate
+                              ? check.purchaseDate.substring(0, 10)
+                              : ""
+                          );
+                          setFormCoverageStart(
+                            check.coverageStart
+                              ? check.coverageStart.substring(0, 10)
+                              : ""
+                          );
+                          setFormCoverageEnd(
+                            check.coverageEnd
+                              ? check.coverageEnd.substring(0, 10)
+                              : ""
+                          );
+                          setFormDeviceStatus(check.deviceStatus || "");
+                          setFormNotes(check.additionalNotes || "");
                         }}
                       >
                         <Edit className="h-4 w-4" />
@@ -303,6 +362,92 @@ export default function AdminWarrantyChecks() {
                               </SelectItem>
                             </SelectContent>
                           </Select>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-1">
+                              Warranty Status
+                            </label>
+                            <Input
+                              value={formWarrantyStatus}
+                              onChange={(e) =>
+                                setFormWarrantyStatus(e.target.value)
+                              }
+                              placeholder="e.g. In Warranty, Out of Warranty"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-1">
+                              Device Status
+                            </label>
+                            <Input
+                              value={formDeviceStatus}
+                              onChange={(e) =>
+                                setFormDeviceStatus(e.target.value)
+                              }
+                              placeholder="e.g. Clean, Blacklisted"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-1">
+                              Warranty Expiry Date
+                            </label>
+                            <Input
+                              type="date"
+                              value={formWarrantyExpiry}
+                              onChange={(e) =>
+                                setFormWarrantyExpiry(e.target.value)
+                              }
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-1">
+                              Purchase Date
+                            </label>
+                            <Input
+                              type="date"
+                              value={formPurchaseDate}
+                              onChange={(e) =>
+                                setFormPurchaseDate(e.target.value)
+                              }
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-1">
+                              Coverage Start
+                            </label>
+                            <Input
+                              type="date"
+                              value={formCoverageStart}
+                              onChange={(e) =>
+                                setFormCoverageStart(e.target.value)
+                              }
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-1">
+                              Coverage End
+                            </label>
+                            <Input
+                              type="date"
+                              value={formCoverageEnd}
+                              onChange={(e) =>
+                                setFormCoverageEnd(e.target.value)
+                              }
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">
+                            Additional Notes (included in email)
+                          </label>
+                          <textarea
+                            className="w-full border rounded-md px-3 py-2 text-sm"
+                            rows={4}
+                            value={formNotes}
+                            onChange={(e) => setFormNotes(e.target.value)}
+                            placeholder="Add any manual findings or comments for the customer..."
+                          />
                         </div>
                         <div className="flex items-center space-x-2">
                           <Checkbox

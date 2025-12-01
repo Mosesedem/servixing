@@ -105,7 +105,11 @@ export default function WarrantyDeviceCheckPage() {
       }
 
       const checkData = await checkRes.json();
-      setResult(checkData.data || checkData);
+      // Instead of setting result, set a flag for completion
+      setResult({
+        status: "processing",
+        provider: checkData.provider || "Unknown",
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -189,47 +193,28 @@ export default function WarrantyDeviceCheckPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <Card className="p-6 sm:p-8">
             <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 mb-4">
-                <Shield className="h-8 w-8 text-green-600" />
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 mb-4">
+                <Shield className="h-8 w-8 text-blue-600" />
               </div>
-              <h2 className="text-2xl font-bold mb-2">Check Complete</h2>
+              <h2 className="text-2xl font-bold mb-2">Check In Progress</h2>
               <p className="text-muted-foreground">
-                Here are the results for your device
+                Your warranty and device status check is being processed
               </p>
             </div>
 
             <div className="space-y-6">
-              {/* Warranty Status */}
-              <div className="p-6 border rounded-lg bg-gray-50 dark:bg-gray-900/50">
+              {/* Processing Status */}
+              <div className="p-6 border rounded-lg bg-blue-50 dark:bg-blue-900/20">
                 <div className="flex items-start gap-4">
-                  {result.status === "active" ? (
-                    <CheckCircle className="h-8 w-8 text-green-600 shrink-0" />
-                  ) : result.status === "expired" ? (
-                    <XCircle className="h-8 w-8 text-red-600 shrink-0" />
-                  ) : (
-                    <AlertCircle className="h-8 w-8 text-yellow-600 shrink-0" />
-                  )}
+                  <CheckCircle className="h-8 w-8 text-blue-600 shrink-0" />
                   <div className="flex-1">
                     <h3 className="font-semibold text-lg mb-1">
-                      Warranty Status
+                      Check Initiated
                     </h3>
-                    <p className="text-muted-foreground capitalize mb-2">
-                      {result.status.replace("_", " ")}
+                    <p className="text-muted-foreground mb-2">
+                      Your device check has been started successfully.
                     </p>
-                    {result.expiryDate && (
-                      <p className="text-sm text-muted-foreground">
-                        Expires:{" "}
-                        {new Date(result.expiryDate).toLocaleDateString(
-                          "en-US",
-                          {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          }
-                        )}
-                      </p>
-                    )}
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <p className="text-sm text-muted-foreground">
                       Provider:{" "}
                       <span className="capitalize">{result.provider}</span>
                     </p>
@@ -237,57 +222,22 @@ export default function WarrantyDeviceCheckPage() {
                 </div>
               </div>
 
-              {/* Device Status */}
-              {result.deviceStatus && (
-                <div className="p-6 border rounded-lg bg-gray-50 dark:bg-gray-900/50">
-                  <div className="flex items-start gap-4">
-                    {result.deviceStatus === "clean" ? (
-                      <CheckCircle className="h-8 w-8 text-green-600 shrink-0" />
-                    ) : (
-                      <XCircle className="h-8 w-8 text-red-600 shrink-0" />
-                    )}
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-lg mb-1">
-                        Device Status
-                      </h3>
-                      <p className="text-muted-foreground capitalize mb-2">
-                        {result.deviceStatus}
-                      </p>
-                      {result.deviceStatus === "clean" ? (
-                        <p className="text-sm text-green-600">
-                          ✓ Device is not reported stolen or blacklisted
-                        </p>
-                      ) : (
-                        <p className="text-sm text-red-600">
-                          ⚠ This device may be reported stolen or blacklisted
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Info Box */}
-              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                <div className="flex items-start gap-3">
-                  <Info className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
-                  <div className="text-sm text-blue-900 dark:text-blue-100">
-                    <p className="font-semibold mb-1">
-                      What do these results mean?
+              {/* Email Notification */}
+              <div className="p-6 border rounded-lg bg-green-50 dark:bg-green-900/20">
+                <div className="flex items-start gap-4">
+                  <CheckCircle className="h-8 w-8 text-green-600 shrink-0" />
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-lg mb-1">
+                      Email Notification
+                    </h3>
+                    <p className="text-muted-foreground mb-2">
+                      You will receive an email with the complete results within
+                      2 hours.
                     </p>
-                    <ul className="space-y-1 text-blue-800 dark:text-blue-200">
-                      <li>
-                        • <strong>Active:</strong> Device is covered under
-                        manufacturer warranty
-                      </li>
-                      <li>
-                        • <strong>Expired:</strong> Warranty coverage has ended
-                      </li>
-                      <li>
-                        • <strong>Clean:</strong> Device is not blacklisted or
-                        reported stolen
-                      </li>
-                    </ul>
+                    <p className="text-sm text-muted-foreground">
+                      Check your inbox (and spam folder) for updates from
+                      Servixing.
+                    </p>
                   </div>
                 </div>
               </div>

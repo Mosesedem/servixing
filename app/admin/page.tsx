@@ -90,7 +90,7 @@ export default function AdminDashboard() {
         const response = await fetch("/api/admin/work-orders?limit=5");
         if (response.ok) {
           const data = await response.json();
-          setRecentWorkOrders(data.slice(0, 5));
+          setRecentWorkOrders(data.workOrders?.slice(0, 5) || []);
         }
       } catch (error) {
         console.error("Error fetching recent work orders:", error);

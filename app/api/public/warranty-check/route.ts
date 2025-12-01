@@ -120,20 +120,32 @@ export async function POST(req: NextRequest) {
 
     const result = await checkWarranty(brand, serialNumber, imei);
 
-    // Store warranty check result
+    // Map provider result into structured fields
+    const normalizedStatus =
+      result.status === "active" || result.status === "in_warranty"
+        ? "SUCCESS"
+        : result.status === "expired" || result.status === "out_of_warranty"
+        ? "FAILED"
+        : result.status === "requires_verification"
+        ? "MANUAL_REQUIRED"
+        : "SUCCESS";
+
     const warrantyCheck = await prisma.warrantyCheck.create({
       data: {
         workOrderId: workOrder?.id || null,
         provider: result.provider,
         initiatedBy: user?.id || "public",
-        status:
-          result.status === "active" || result.status === "in_warranty"
-            ? "SUCCESS"
-            : result.status === "expired" || result.status === "out_of_warranty"
-            ? "FAILED"
-            : result.status === "requires_verification"
-            ? "MANUAL_REQUIRED"
-            : "SUCCESS",
+        status: normalizedStatus,
+        warrantyStatus: result.status || null,
+        warrantyExpiry: result.expiryDate ? new Date(result.expiryDate) : null,
+        purchaseDate: result.purchaseDate
+          ? new Date(result.purchaseDate)
+          : null,
+        coverageStart: result.coverageStart
+          ? new Date(result.coverageStart)
+          : null,
+        coverageEnd: result.coverageEnd ? new Date(result.coverageEnd) : null,
+        deviceStatus: result.deviceStatus || null,
         result: {
           ...result,
           checkedAt: new Date().toISOString(),

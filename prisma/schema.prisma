@@ -481,10 +481,20 @@ model WarrantyCheck {
   workOrderId String?
 
   provider    String // "apple", "dell"
-  initiatedBy String // userId
+  initiatedBy String // userId or "public"
   status      CheckStatus @default(QUEUED)
 
-  result       Json? // API response data
+  // Structured result fields for admin overrides & email
+  warrantyStatus  String?
+  warrantyExpiry  DateTime?
+  purchaseDate    DateTime?
+  coverageStart   DateTime?
+  coverageEnd     DateTime?
+  deviceStatus    String? // clean / blacklisted / unknown
+  additionalNotes String?   @db.Text
+
+  // Raw provider payload for debugging
+  result       Json? // Original API response data
   errorMessage String?
 
   createdAt  DateTime  @default(now())
