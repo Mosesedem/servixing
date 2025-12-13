@@ -8,7 +8,7 @@ import bcrypt from "bcryptjs";
 
 const setPasswordSchema = z.object({
   currentPassword: z.string().optional(),
-  newPassword: z.string().min(8, "Password must be at least 8 characters"),
+  newPassword: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 export async function POST(req: NextRequest) {

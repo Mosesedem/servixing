@@ -10,12 +10,10 @@ export const userRegistrationSchema = z.object({
     .string()
     .min(10, "Phone number must be at least 10 digits")
     .optional(),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-    .regex(/[0-9]/, "Password must contain at least one number"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  // .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+  // .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+  // .regex(/[0-9]/, "Password must contain at least one number"),
   // phone: z.string().optional(),
   address: z.string().optional(),
 });
@@ -43,12 +41,10 @@ export const userUpdateSchema = z.object({
  */
 export const passwordChangeSchema = z.object({
   currentPassword: z.string().min(1, "Current password is required"),
-  newPassword: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-    .regex(/[0-9]/, "Password must contain at least one number"),
+  newPassword: z.string().min(6, "Password must be at least 6 characters"),
+  // .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+  // .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+  // .regex(/[0-9]/, "Password must contain at least one number"),
 });
 
 /**
@@ -63,12 +59,10 @@ export const forgotPasswordSchema = z.object({
  */
 export const resetPasswordSchema = z.object({
   token: z.string().regex(/^\d{5,6}$/i, "Reset code must be 5 or 6 digits"),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-    .regex(/[0-9]/, "Password must contain at least one number"),
+  password: z.string().min(6, "Password must be at least 8 characters"),
+  // .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+  // .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+  // .regex(/[0-9]/, "Password must contain at least one number"),
 });
 
 /**
