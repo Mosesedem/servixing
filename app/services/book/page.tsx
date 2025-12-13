@@ -862,7 +862,11 @@ ${
                     </p>
                     <span className="flex relative hover:underline text-sm ">
                       {" "}
-                      <Link href="" target="_blank" className="flex p-2">
+                      <Link
+                        href="google.com/maps?sca_esv=25fc33dff17615f3&sxsrf=AE3TifP0E-QsoqFgMKSizeDAW2OrVs0Baw:1765627851493&uact=5&gs_lp=Egxnd3Mtd2l6LXNlcnAiIGpheWNvYidzIGlubm92YXRpb24gcG9ydGhhcmNvdXJ0MgUQABjvBTIIEAAYgAQYogQyCBAAGIAEGKIEMggQABiABBiiBDIIEAAYgAQYogRI7zFQmglYki9wAngAkAEAmAGVDaAByBuqAQkzLTEuNy0xLjG4AQPIAQD4AQGYAgOgAvcCwgIIEAAYsAMY7wXCAgsQABiABBiwAxiiBMICChAhGKABGMMEGAqYAwDiAwUSATEgQIgGAZAGBZIHBTIuMy0xoAfADLIHAzMtMbgH7gLCBwUwLjEuMsgHCIAIAA&um=1&ie=UTF-8&fb=1&gl=ng&sa=X&geocode=KZ-1y8HLz2kQMUhVwp71bApQ&daddr=7+Agudama+Street,+Dline,+Port+Harcourt+500101,+Rivers"
+                        target="_blank"
+                        className="flex p-2"
+                      >
                         Get Direction 📍
                       </Link>
                     </span>

@@ -23,6 +23,7 @@ import {
   HelpCircle,
   LogOut,
   ChevronDown,
+  Pen,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -118,6 +119,11 @@ export function DashboardSidebar() {
       href: "/services/warranty-device-check",
       icon: Shield,
       label: "Warranty Check",
+    },
+    {
+      href: "/services/book",
+      icon: Pen,
+      label: "Book Repairs",
     },
     {
       href: "/shop",

@@ -23,7 +23,7 @@ export default function CreateWorkOrderPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedDeviceId = searchParams.get("deviceId");
-
+  const [search, setSearch] = useState<string>("");
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +53,7 @@ export default function CreateWorkOrderPage() {
 
   const fetchDevices = async () => {
     try {
-      const response = await fetch("/api/devices?limit=100");
+      const response = await fetch("/api/devices");
       if (response.ok) {
         const result = await response.json();
         setDevices(result.data);
@@ -109,7 +109,6 @@ export default function CreateWorkOrderPage() {
   };
 
   const handleBack = () => {
-    setError(null);
     setStep((prev) => prev - 1);
   };
 
@@ -171,6 +170,17 @@ export default function CreateWorkOrderPage() {
   };
 
   const selectedDevice = devices?.find((d) => d.id === formData.deviceId);
+
+  // Filter devices based on search query
+  const filteredDevices = devices.filter((d) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      d.brand.toLowerCase().includes(q) ||
+      d.model.toLowerCase().includes(q) ||
+      d.deviceType.toLowerCase().includes(q)
+    );
+  });
 
   return (
     <div className="container max-w-4xl mx-auto py-8 px-4">
@@ -251,41 +261,73 @@ export default function CreateWorkOrderPage() {
                 </Link>
               </div>
             ) : (
-              <div className="space-y-4">
-                {devices?.map((device) => (
-                  <label
-                    key={device.id}
-                    className={`flex items-center gap-4 p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      formData.deviceId === device.id
-                        ? "border-orange-600 bg-orange-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="deviceId"
-                      value={device.id}
-                      checked={formData.deviceId === device.id}
-                      onChange={handleChange}
-                      className="w-5 h-5 text-orange-600"
-                    />
-                    <div className="flex-1">
-                      <h3 className="font-semibold">
-                        {device.brand} {device.model}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        {device.deviceType}
-                      </p>
-                    </div>
-                    {device.images.length > 0 && (
-                      <img
-                        src={device.images[0]}
-                        alt={device.model}
-                        className="w-16 h-16 object-cover rounded"
+              <div>
+                <div className="space-y-6">
+                  <Input
+                    type="text"
+                    name="search"
+                    placeholder="Search devices..."
+                    className="mb-4"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-4">
+                  {filteredDevices?.slice(0, 7).map((device) => (
+                    <label
+                      key={device.id}
+                      className={`flex items-center gap-4 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                        formData.deviceId === device.id
+                          ? "border-orange-600 bg-orange-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="deviceId"
+                        value={device.id}
+                        checked={formData.deviceId === device.id}
+                        onChange={handleChange}
+                        className="w-5 h-5 text-orange-600"
                       />
-                    )}
-                  </label>
-                ))}
+                      <div className="flex-1">
+                        <h3 className="font-semibold">
+                          {device.brand} {device.model}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          {device.deviceType}
+                        </p>
+                      </div>
+                      {device.images.length > 0 && (
+                        <img
+                          src={device.images[0]}
+                          alt={device.model}
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                      )}
+                    </label>
+                  ))}
+                  {search.trim() && filteredDevices.length === 0 && (
+                    <p className="text-sm text-gray-600">
+                      No devices match "{search}". Try a different search.
+                    </p>
+                  )}
+                  <p>
+                    {" "}
+                    Can't find your device?{" "}
+                    <span className="text-orange-600 font-semibold">
+                      <Button
+                        className=""
+                        variant="link"
+                        onClick={() =>
+                          router.push("/dashboard/devices/register")
+                        }
+                      >
+                        Register a new one
+                      </Button>
+                    </span>
+                  </p>
+                </div>
               </div>
             )}
 
