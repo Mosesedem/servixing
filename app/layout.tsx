@@ -9,6 +9,7 @@ import { authOptions } from "@/lib/auth";
 import { ConditionalNavbar } from "@/components/conditional-navbar";
 import { ConditionalFooter } from "@/components/conditional-footer";
 import { Livvic } from "next/font/google";
+import Script from "next/script";
 
 const livvic = Livvic({
   weight: "400",
@@ -66,6 +67,18 @@ export default async function RootLayout({
           <ConditionalFooter />
         </Providers>
         <Analytics />
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-P7E5BWQ39M"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-P7E5BWQ39M');
+          `}
+        </Script>
       </body>
     </html>
   );
