@@ -188,7 +188,7 @@ export async function PATCH(
             <p><strong>Issue:</strong> ${updatedRequest.issueDescription}</p>
             ${
               finalCost
-                ? `<p><strong>Final Cost:</strong> $${finalCost}</p>`
+                ? `<p><strong>Final Cost:</strong> ₦ ${finalCost}</p>`
                 : ""
             }
             ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ""}

@@ -295,7 +295,7 @@ export default function AdminWorkOrders() {
                           </label>
                           <Input
                             type="number"
-                            step="0.01"
+                            step="1"
                             value={finalCost}
                             onChange={(e) => setFinalCost(e.target.value)}
                             placeholder="Enter final cost"

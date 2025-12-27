@@ -148,7 +148,7 @@ export default function AdminDashboard() {
             <StatCard
               icon={DollarSign}
               title="Total Revenue"
-              value={`$${stats.totalRevenue?.toFixed(2)}`}
+              value={`₦ ${stats.totalRevenue?.toFixed(2)}`}
               color="bg-emerald-50"
             />
             <StatCard

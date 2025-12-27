@@ -237,7 +237,7 @@ export default function AdminPublicRepairRequests() {
                     </span>
                     {request.finalCost && (
                       <span className="font-semibold">
-                        Final: ${Number(request.finalCost).toFixed(2)}
+                        Final: ₦ {Number(request.finalCost).toFixed(2)}
                       </span>
                     )}
                   </div>
@@ -302,7 +302,7 @@ export default function AdminPublicRepairRequests() {
                           </label>
                           <Input
                             type="number"
-                            step="0.01"
+                            step="1"
                             value={finalCost}
                             onChange={(e) => setFinalCost(e.target.value)}
                             placeholder="Enter final cost"
